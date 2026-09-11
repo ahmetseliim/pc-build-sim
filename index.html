@@ -1,0 +1,450 @@
+﻿<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PC Toplama Sim&uuml;lasyonu</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+    body {
+      background-color: #795548;
+      background-image: repeating-linear-gradient(90deg, #6d4c41, #6d4c41 20px, #5d4037 20px, #5d4037 40px);
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      display: flex; flex-direction: column; align-items: center;
+      padding: 20px; gap: 20px; min-height: 100vh; overflow-x: hidden;
+    }
+    .motherboard {
+      width: 920px; height: 500px; background-color: #0b192c;
+      border: 3px solid #1e3e62; border-radius: 12px; position: relative;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      background-image: linear-gradient(rgba(30,62,98,0.2) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(30,62,98,0.2) 1px, transparent 1px);
+      background-size: 20px 20px; padding: 30px;
+    }
+    .motherboard-title {
+      color: #00ffcc; font-size: 13px; font-weight: bold;
+      letter-spacing: 2px; margin-bottom: 25px;
+    }
+    .slots-upper { display: flex; align-items: flex-start; gap: 20px; }
+    .slot {
+      border: 2px dashed #475569; background: rgba(15,23,42,0.6); border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      position: relative; transition: all 0.2s ease; cursor: pointer;
+    }
+    .slot-text {
+      position: absolute; color: #94a3b8; font-size: 11px; font-weight: bold;
+      text-align: center; pointer-events: none; z-index: 5; width: 100%;
+    }
+    @keyframes lockStamp {
+      0%   { transform: scale(3); opacity: 0; }
+      50%  { transform: scale(0.8); opacity: 1; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    /* CPU YUVASI - kare IHS plaka */
+    .slot-cpu { width: 110px; height: 110px; border: 2px solid #ef4444; border-radius: 4px; }
+    /* CPU PARCASI - metalik celik IHS */
+    .part-cpu {
+      width: 110px; height: 110px;
+      background: linear-gradient(135deg, #d4d4d4 0%, #a8a8a8 30%, #c0c0c0 55%, #888 100%);
+      border-radius: 3px !important; border: 2px solid #777;
+      box-shadow: inset 0 2px 6px rgba(255,255,255,0.45), inset 0 -2px 4px rgba(0,0,0,0.35);
+    }
+    .slot-fan { width: 110px; height: 110px; }
+    .slot-ram { width: 44px; height: 130px; }
+    .slot-m2  { width: 140px; height: 38px; margin: 30px 0 25px 0; }
+    .slot-gpu { width: 460px; height: 52px; }
+    .slot-overlay {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      z-index: 20; pointer-events: none; border-radius: 4px;
+      text-align: center; color: white; font-weight: bold; font-size: 11px;
+      transition: background 0.3s ease;
+    }
+    /* CANVAS - spatula boyama alani */
+    #paste-canvas {
+      position: absolute; top: 0; left: 0;
+      width: 106px; height: 106px; border-radius: 3px;
+      pointer-events: none; z-index: 16; opacity: 0; transition: opacity 0.3s;
+    }
+    #paste-canvas.active { pointer-events: auto; opacity: 1; cursor: crosshair; }
+    /* Merkez macun damlasi */
+    .paste-blob {
+      position: absolute; width: 26px; height: 26px; border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, #e2e8f0, #94a3b8 70%, #64748b);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.5), inset 0 1px 3px rgba(255,255,255,0.7);
+      top: 50%; left: 50%; transform: translate(-50%, -50%);
+      pointer-events: none; z-index: 17; transition: opacity 0.3s;
+    }
+    /* Yuzde gostergesi */
+    .paste-pct {
+      position: absolute; bottom: 3px; left: 50%; transform: translateX(-50%);
+      font-size: 9px; font-weight: bold; color: #a3e635;
+      pointer-events: none; z-index: 25; white-space: nowrap;
+      text-shadow: 0 0 4px rgba(0,0,0,0.9);
+    }
+    /* Fan yerlesince kalan yayili tabaka */
+    .paste-layer {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      border-radius: 3px; pointer-events: none; z-index: 1;
+      background: linear-gradient(135deg,
+        rgba(148,163,184,0.60) 0%, rgba(100,116,139,0.70) 50%, rgba(71,85,105,0.60) 100%);
+    }
+    /* ENVANTER */
+    .inventory-container {
+      width: 920px; background: #2b170e; border: 2px solid #3d2314;
+      border-radius: 12px; padding: 15px 25px 20px 25px; box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+    }
+    .inventory-title { color: #e2b083; font-size: 12px; font-weight: bold; margin-bottom: 15px; }
+    .inventory {
+      display: flex; align-items: center; justify-content: flex-start;
+      gap: 20px; overflow-x: auto; min-height: 145px; position: relative;
+    }
+    /* PARCALAR */
+    .part {
+      cursor: grab; border-radius: 6px;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      color: #fff; font-weight: bold; font-size: 11px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3); flex-shrink: 0; position: relative; touch-action: none;
+    }
+    .part * { pointer-events: none; }
+    .part:active { cursor: grabbing; }
+    .part-fan   { width: 110px; height: 110px; background: #38bdf8; }
+    .part-ram   { width: 44px;  height: 130px; background: #0ea5e9; }
+    .part-m2    { width: 140px; height: 38px;  background: #f59e0b; }
+    .part-gpu   { width: 460px; height: 52px;  background: #a855f7; }
+    .part-paste { width: 80px; height: 80px; background: linear-gradient(135deg, #64748b, #94a3b8); }
+    .part-paste.depleted { opacity: 0.4; cursor: not-allowed; filter: grayscale(0.8); }
+    /* BASLAT BUTONU */
+    #start-btn {
+      display: none; margin-top: 10px; padding: 14px 32px;
+      background: #10b981; color: white; font-size: 16px; font-weight: bold;
+      border: none; border-radius: 8px; cursor: pointer;
+      box-shadow: 0 0 20px rgba(16,185,129,0.6); animation: pulse 1.5s infinite;
+    }
+    @keyframes pulse {
+      0%   { transform: scale(1); }
+      50%  { transform: scale(1.05); }
+      100% { transform: scale(1); }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="motherboard">
+    <div class="motherboard-title">ANAKART &bull; Z790 &bull; DDR5</div>
+    <div class="slots-upper">
+      <div class="slot slot-cpu" data-accept="cpu">
+        <div class="slot-overlay" id="cpu-overlay" style="background:rgba(0,0,0,0.6);">&#128274; MANDAL KAPALI<br>(A&ccedil;mak i&ccedil;in T&#305;kla)</div>
+        <canvas id="paste-canvas" width="106" height="106"></canvas>
+      </div>
+      <div class="slot slot-fan" data-accept="fan"><span class="slot-text">CPU FANI</span></div>
+      <div class="slot slot-ram" data-accept="ram"><span class="slot-text">RAM 1</span></div>
+      <div class="slot slot-ram" data-accept="ram"><span class="slot-text">RAM 2</span></div>
+    </div>
+    <div class="slot slot-m2" data-accept="m2"><span class="slot-text">M.2 NVMe SSD</span></div>
+    <div class="slot slot-gpu" data-accept="gpu"><span class="slot-text">PCIe X16 &mdash; EKRAN KARTI</span></div>
+  </div>
+
+  <div class="inventory-container">
+    <div class="inventory-title">ENVANTER</div>
+    <div class="inventory" id="inventory">
+      <div class="part part-cpu" data-type="cpu">
+        <div class="icon" style="font-size:18px;">&#9632;</div><span>&#304;&#351;lemci</span>
+      </div>
+      <div class="part part-fan" data-type="fan">
+        <div class="icon">&#127744;</div><span>CPU Fan&#305;</span>
+      </div>
+      <div class="part part-ram" data-type="ram">
+        <div class="icon">&#128202;</div><span>RAM 1</span>
+      </div>
+      <div class="part part-ram" data-type="ram">
+        <div class="icon">&#128202;</div><span>RAM 2</span>
+      </div>
+      <div class="part part-m2" data-type="m2">
+        <div class="icon">&#128190;</div><span>M.2 SSD</span>
+      </div>
+      <div class="part part-gpu" data-type="gpu">
+        <div class="icon">&#127918;</div><span>Ekran Kart&#305;</span>
+      </div>
+      <div class="part part-paste" data-type="paste" id="paste-part">
+        <div class="icon" style="font-size:24px;">&#128137;</div><span>Termal Macun</span>
+      </div>
+    </div>
+  </div>
+
+  <button id="start-btn">&#9889; B&#304;LG&#304;SAYARI BA&#350;LAT</button>
+
+  <script>
+    // STATE: locked_empty -> open -> installed -> locked_full -> paste_applied
+    let cpuState    = "locked_empty";
+    let placedCount = 0;
+    const totalParts = 6;
+
+    const cpuSlot     = document.querySelector(".slot-cpu");
+    const cpuOverlay  = document.getElementById("cpu-overlay");
+    const inventory   = document.getElementById("inventory");
+    const startBtn    = document.getElementById("start-btn");
+    const pastePart   = document.getElementById("paste-part");
+    const pasteCanvas = document.getElementById("paste-canvas");
+    const ctx         = pasteCanvas.getContext("2d");
+
+    let spreadActive  = false;
+    let isPainting    = false;
+    let spreadPct     = 0;
+    let paintCallN    = 0;
+    let pasteBlob     = null;
+    let pastePctEl    = null;
+    let pasteLayerEl  = null;
+
+    const CANVAS_W = 106;
+    const CANVAS_H = 106;
+    const BRUSH_R  = 13;
+    const DONE_PCT = 80;
+
+    // 1. CPU MANDAL
+    cpuSlot.addEventListener("click", () => {
+      if (spreadActive) return;
+      if (cpuState === "locked_empty") {
+        cpuState = "open";
+        cpuSlot.style.borderColor = "#00ffcc";
+        cpuOverlay.style.background = "rgba(0,255,204,0.15)";
+        cpuOverlay.innerHTML = "\uD83D\uDD13 SOKET A\u00c7IK<br>(\u0130\u015flemciyi B\u0131rak)";
+      } else if (cpuState === "installed") {
+        cpuState = "locked_full";
+        cpuSlot.style.borderColor = "#94a3b8";
+        cpuSlot.style.boxShadow = "inset 0 0 15px rgba(0,0,0,0.8)";
+        cpuOverlay.style.background = "rgba(0,0,0,0.5)";
+        cpuOverlay.innerHTML =
+          "<div style=\"font-size:32px;animation:lockStamp 0.4s cubic-bezier(0.175,0.885,0.32,1.275) forwards;\">\uD83D\uDD12</div>" +
+          "<div style=\"margin-top:5px;color:#10b981;font-size:14px;\">K\u0130L\u0130TLEND\u0130</div>" +
+          "<div style=\"margin-top:6px;color:#94a3b8;font-size:10px;\">\uD83E\uDDF4 TERMAL MACUN S\u00dcR</div>";
+      }
+    });
+
+    // 2. SPATULA YAYMA MINI-OYUNU
+    function startSpreadMinigame(part) {
+      if (cpuState !== "locked_full") {
+        alert("Uyar\u0131: Termal macun uygulamak i\u00e7in \u00f6nce i\u015flemciyi tak\u0131p mand al\u0131 kilitlemelisin!");
+        returnToInventory(part);
+        return;
+      }
+      returnToInventory(part);
+      spreadActive = true;
+      isPainting   = false;
+      spreadPct    = 0;
+      paintCallN   = 0;
+      ctx.clearRect(0, 0, CANVAS_W, CANVAS_H);
+
+      pasteBlob = document.createElement("div");
+      pasteBlob.className = "paste-blob";
+      cpuSlot.appendChild(pasteBlob);
+
+      pastePctEl = document.createElement("div");
+      pastePctEl.className = "paste-pct";
+      pastePctEl.textContent = "%0";
+      cpuSlot.appendChild(pastePctEl);
+
+      cpuOverlay.style.background = "rgba(0,0,0,0.52)";
+      cpuOverlay.style.pointerEvents = "none";
+      cpuOverlay.innerHTML =
+        "<div style=\"font-size:9px;color:#fbbf24;line-height:1.6;padding:0 5px;text-align:center;\">" +
+        "Macunu t\u00fcm y\u00fczeye<br>s\u00fcr\u00fckleyerek yay!<br>" +
+        "<span style=\"color:#a3e635;\">Hedef: %" + DONE_PCT + "</span></div>";
+
+      pasteCanvas.classList.add("active");
+      pasteCanvas.addEventListener("pointerdown", onPaintStart);
+      pasteCanvas.addEventListener("pointermove",  onPaintMove);
+      pasteCanvas.addEventListener("pointerup",    onPaintEnd);
+      pasteCanvas.addEventListener("pointerleave", onPaintEnd);
+    }
+
+    function onPaintStart(e) {
+      e.preventDefault();
+      isPainting = true;
+      if (pasteBlob) pasteBlob.style.opacity = "0.2";
+      paint(e);
+    }
+    function onPaintMove(e) {
+      if (!isPainting) return;
+      e.preventDefault();
+      paint(e);
+    }
+    function onPaintEnd() { isPainting = false; }
+
+    function paint(e) {
+      const rect   = pasteCanvas.getBoundingClientRect();
+      const scaleX = CANVAS_W / rect.width;
+      const scaleY = CANVAS_H / rect.height;
+      const x = (e.clientX - rect.left) * scaleX;
+      const y = (e.clientY - rect.top)  * scaleY;
+
+      const grad = ctx.createRadialGradient(x, y, 0, x, y, BRUSH_R);
+      grad.addColorStop(0,   "rgba(180,190,200, 0.75)");
+      grad.addColorStop(0.6, "rgba(148,163,184, 0.58)");
+      grad.addColorStop(1,   "rgba(100,116,139, 0)");
+
+      ctx.globalCompositeOperation = "source-over";
+      ctx.beginPath();
+      ctx.arc(x, y, BRUSH_R, 0, Math.PI * 2);
+      ctx.fillStyle = grad;
+      ctx.fill();
+
+      paintCallN++;
+      if (paintCallN % 5 === 0) updateCoverage();
+    }
+
+    function updateCoverage() {
+      const data  = ctx.getImageData(0, 0, CANVAS_W, CANVAS_H).data;
+      let filled  = 0;
+      const total = CANVAS_W * CANVAS_H;
+      for (let i = 3; i < data.length; i += 4) {
+        if (data[i] > 15) filled++;
+      }
+      spreadPct = Math.min(100, Math.round((filled / total) * 100));
+      if (pastePctEl) {
+        pastePctEl.textContent = "%" + spreadPct;
+        pastePctEl.style.color = spreadPct >= DONE_PCT ? "#22c55e" : "#a3e635";
+      }
+      if (spreadPct >= DONE_PCT && spreadActive) finishSpread();
+    }
+
+    function finishSpread() {
+      spreadActive = false;
+      isPainting   = false;
+
+      pasteCanvas.classList.remove("active");
+      pasteCanvas.removeEventListener("pointerdown", onPaintStart);
+      pasteCanvas.removeEventListener("pointermove",  onPaintMove);
+      pasteCanvas.removeEventListener("pointerup",    onPaintEnd);
+      pasteCanvas.removeEventListener("pointerleave", onPaintEnd);
+
+      if (pasteBlob)  { pasteBlob.remove();  pasteBlob  = null; }
+      if (pastePctEl) { pastePctEl.remove(); pastePctEl = null; }
+
+      pasteCanvas.style.opacity = "0";
+      pasteCanvas.style.pointerEvents = "none";
+
+      pasteLayerEl = document.createElement("div");
+      pasteLayerEl.className = "paste-layer";
+      cpuSlot.appendChild(pasteLayerEl);
+
+      cpuState = "paste_applied";
+      pastePart.classList.add("depleted");
+      pastePart.dataset.type = "paste_used";
+      const lbl = pastePart.querySelector("span");
+      if (lbl) lbl.textContent = "T\u00fckendi";
+
+      cpuOverlay.style.background = "transparent";
+      cpuOverlay.innerHTML =
+        "<div style=\"margin-top:68px;background:rgba(0,0,0,0.72);border-radius:4px;" +
+        "padding:3px 8px;font-size:10px;white-space:nowrap;\">" +
+        "\u2728 Harika Yay\u0131l\u0131m! (%" + spreadPct + " Kapland\u0131)</div>";
+
+      alert("\u2728 Harika Yay\u0131l\u0131m! (%" + spreadPct + " Kapland\u0131)\nArt\u0131k CPU fan\u0131n\u0131 takabilirsin.");
+    }
+
+    // 3. POINTER DRAG SISTEMI
+    let shiftX = 0, shiftY = 0;
+
+    document.querySelectorAll(".part").forEach(part => {
+      part.addEventListener("pointerdown", function(e) {
+        if (part.parentElement.classList.contains("slot")) return;
+        if (part.classList.contains("depleted")) return;
+
+        const rect = part.getBoundingClientRect();
+        shiftX = e.clientX - rect.left;
+        shiftY = e.clientY - rect.top;
+
+        part.style.position = "absolute";
+        part.style.zIndex   = 1000;
+        document.body.appendChild(part);
+        moveAt(e.pageX, e.pageY);
+
+        function moveAt(px, py) {
+          part.style.left = (px - shiftX) + "px";
+          part.style.top  = (py - shiftY) + "px";
+        }
+        function onMove(ev) { moveAt(ev.pageX, ev.pageY); }
+        document.addEventListener("pointermove", onMove);
+
+        part.onpointerup = function(ev) {
+          document.removeEventListener("pointermove", onMove);
+          part.onpointerup = null;
+
+          part.style.visibility = "hidden";
+          const below = document.elementFromPoint(ev.clientX, ev.clientY);
+          part.style.visibility = "visible";
+
+          if (!below) { returnToInventory(part); return; }
+
+          const targetSlot = below.closest(".slot");
+          const partType   = part.dataset.type;
+
+          if (partType === "paste") {
+            if (targetSlot && targetSlot.classList.contains("slot-cpu")) {
+              startSpreadMinigame(part);
+            } else {
+              returnToInventory(part);
+            }
+            return;
+          }
+
+          if (targetSlot && targetSlot.dataset.accept === partType) {
+            if (partType === "cpu") {
+              if (cpuState !== "open") {
+                alert("Uyar\u0131: \u00d6nce anakart \u00fczerindeki CPU soket mand al\u0131na t\u0131klayarak kilidi a\u00e7mal\u0131s\u0131n!");
+                returnToInventory(part);
+              } else {
+                cpuState = "installed";
+                cpuOverlay.style.background = "rgba(239,68,68,0.85)";
+                cpuOverlay.innerHTML = "\u26A0\uFE0F MANDALI KAPAT<br>(T\u0131kla)";
+                placeInSlot(part, targetSlot);
+              }
+            } else if (partType === "fan") {
+              if (cpuState !== "paste_applied") {
+                alert("Uyar\u0131: So\u011futucuyu takmadan \u00f6nce i\u015flemciye termal macun uygulam al\u0131s\u0131n!");
+                returnToInventory(part);
+              } else {
+                if (pasteLayerEl) pasteLayerEl.style.zIndex = "0";
+                placeInSlot(part, targetSlot);
+              }
+            } else if (targetSlot.children.length <= 2) {
+              placeInSlot(part, targetSlot);
+            } else {
+              returnToInventory(part);
+            }
+          } else {
+            returnToInventory(part);
+          }
+        };
+      });
+
+      part.ondragstart = () => false;
+    });
+
+    // 4. YARDIMCI FONKSIYONLAR
+    function placeInSlot(part, slot) {
+      const txt = slot.querySelector(".slot-text");
+      if (txt) txt.style.display = "none";
+      slot.appendChild(part);
+      part.style.position = "relative";
+      part.style.left = part.style.top = "auto";
+      part.style.width = "100%"; part.style.height = "100%";
+      part.style.margin = "0"; part.style.zIndex = "1";
+      placedCount++;
+      if (placedCount === totalParts) startBtn.style.display = "block";
+    }
+
+    function returnToInventory(part) {
+      inventory.appendChild(part);
+      part.style.position = "relative";
+      part.style.left = part.style.top = "auto";
+      part.style.zIndex = "1";
+    }
+
+    startBtn.addEventListener("click", () => {
+      alert("Sistem sorunsuz \u00e7al\u0131\u015ft\u0131r\u0131ld\u0131! Eline sa\u011fl\u0131k.");
+    });
+  </script>
+</body>
+</html>
