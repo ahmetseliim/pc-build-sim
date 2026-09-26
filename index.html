@@ -1,388 +1,609 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="tr">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PC Toplama Sim&uuml;lasyonu</title>
+  <title>PC Toplama Simülasyonu</title>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+
     body {
       background-color: #795548;
       background-image: repeating-linear-gradient(90deg, #6d4c41, #6d4c41 20px, #5d4037 20px, #5d4037 40px);
-      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-      display: flex; flex-direction: column; align-items: center;
-      padding: 20px; gap: 20px; min-height: 100vh; overflow-x: hidden;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+      gap: 20px;
+      min-height: 100vh;
+      overflow-x: hidden;
     }
+
+    /* ANAKART */
     .motherboard {
-      width: 920px; height: 500px; background-color: #0b192c;
-      border: 3px solid #1e3e62; border-radius: 12px; position: relative;
+      width: 960px;
+      height: 540px;
+      background-color: #0b192c;
+      border: 3px solid #1e3e62;
+      border-radius: 12px;
+      position: relative;
       box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-      background-image: linear-gradient(rgba(30,62,98,0.2) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(30,62,98,0.2) 1px, transparent 1px);
-      background-size: 20px 20px; padding: 30px;
+      background-image: 
+        linear-gradient(rgba(30, 62, 98, 0.2) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(30, 62, 98, 0.2) 1px, transparent 1px);
+      background-size: 20px 20px;
+      padding: 25px 35px;
     }
+
     .motherboard-title {
-      color: #00ffcc; font-size: 13px; font-weight: bold;
-      letter-spacing: 2px; margin-bottom: 25px;
+      color: #00ffcc;
+      font-size: 14px;
+      font-weight: bold;
+      letter-spacing: 2px;
+      margin-bottom: 25px;
     }
-    .slots-upper { display: flex; align-items: flex-start; gap: 20px; }
+
+    .slots-upper {
+      display: flex;
+      align-items: flex-start;
+      gap: 25px;
+      position: relative;
+    }
+
     .slot {
-      border: 2px dashed #475569; background: rgba(15,23,42,0.6); border-radius: 6px;
-      display: flex; align-items: center; justify-content: center;
-      position: relative; transition: all 0.2s ease; cursor: pointer;
+      border: 2px dashed #475569;
+      background: rgba(15, 23, 42, 0.6);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      transition: all 0.2s ease;
     }
+
     .slot-text {
-      position: absolute; color: #94a3b8; font-size: 11px; font-weight: bold;
-      text-align: center; pointer-events: none; z-index: 5; width: 100%;
+      position: absolute;
+      color: #94a3b8;
+      font-size: 11px;
+      font-weight: bold;
+      text-align: center;
+      pointer-events: none;
+      z-index: 5;
+      width: 100%;
+      padding: 2px;
     }
-    @keyframes lockStamp {
-      0%   { transform: scale(3); opacity: 0; }
-      50%  { transform: scale(0.8); opacity: 1; }
-      100% { transform: scale(1); opacity: 1; }
+
+    /* YUVALAR */
+    .slot-cpu {
+      width: 115px;
+      height: 115px;
+      border: 2px solid #ef4444;
+      cursor: pointer;
+      position: relative;
     }
-    /* CPU YUVASI - kare IHS plaka */
-    .slot-cpu { width: 110px; height: 110px; border: 2px solid #ef4444; border-radius: 4px; }
-    /* CPU PARCASI - metalik celik IHS */
-    .part-cpu {
-      width: 110px; height: 110px;
-      background: linear-gradient(135deg, #d4d4d4 0%, #a8a8a8 30%, #c0c0c0 55%, #888 100%);
-      border-radius: 3px !important; border: 2px solid #777;
-      box-shadow: inset 0 2px 6px rgba(255,255,255,0.45), inset 0 -2px 4px rgba(0,0,0,0.35);
+
+    /* CPU FANI YUVASI GERİ GELDİ! */
+    .slot-fan {
+      width: 115px;
+      height: 115px;
+      border: 2px dashed #0284c7;
     }
-    .slot-fan { width: 110px; height: 110px; }
-    .slot-ram { width: 44px; height: 130px; }
-    .slot-m2  { width: 140px; height: 38px; margin: 30px 0 25px 0; }
-    .slot-gpu { width: 460px; height: 52px; }
+
     .slot-overlay {
-      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
       display: flex; flex-direction: column; align-items: center; justify-content: center;
-      z-index: 20; pointer-events: none; border-radius: 4px;
-      text-align: center; color: white; font-weight: bold; font-size: 11px;
+      z-index: 20;
+      pointer-events: none;
+      border-radius: 4px;
+      text-align: center;
+      color: white;
+      font-weight: bold;
+      font-size: 11px;
       transition: background 0.3s ease;
     }
-    /* CANVAS - spatula boyama alani */
-    #paste-canvas {
-      position: absolute; top: 0; left: 0;
-      width: 106px; height: 106px; border-radius: 3px;
-      pointer-events: none; z-index: 16; opacity: 0; transition: opacity 0.3s;
+
+    .thermal-paste-dot {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 0%;
+      height: 0%;
+      background-color: #cbd5e1;
+      background-image: 
+        radial-gradient(ellipse at 50% 50%, transparent 40%, rgba(148, 163, 184, 0.4) 100%),
+        repeating-radial-gradient(circle at 0% 0%, transparent 0, transparent 15px, rgba(248, 250, 252, 0.4) 16px, rgba(248, 250, 252, 0.4) 18px),
+        repeating-radial-gradient(circle at 100% 100%, transparent 0, transparent 20px, rgba(148, 163, 184, 0.3) 21px, rgba(148, 163, 184, 0.3) 23px);
+      border-radius: 8px;
+      box-shadow: inset 0 0 10px rgba(100, 116, 139, 0.6), 0 2px 4px rgba(0,0,0,0.3);
+      z-index: 15;
+      opacity: 0;
+      transition: width 0.6s cubic-bezier(0.2, 0.8, 0.2, 1), height 0.6s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.4s ease-out;
+      pointer-events: none;
     }
-    #paste-canvas.active { pointer-events: auto; opacity: 1; cursor: crosshair; }
-    /* Merkez macun damlasi */
-    .paste-blob {
-      position: absolute; width: 26px; height: 26px; border-radius: 50%;
-      background: radial-gradient(circle at 35% 35%, #e2e8f0, #94a3b8 70%, #64748b);
-      box-shadow: 0 2px 6px rgba(0,0,0,0.5), inset 0 1px 3px rgba(255,255,255,0.7);
-      top: 50%; left: 50%; transform: translate(-50%, -50%);
-      pointer-events: none; z-index: 17; transition: opacity 0.3s;
+    .thermal-paste-dot.applied { width: 85%; height: 85%; opacity: 1; }
+
+    /* MİNİK CPU FAN KABLO GİRİŞİ (RAM'in üstünden alınıp anakart boşluğuna kondu) */
+    .slot-cpufan {
+      position: absolute;
+      top: 5px;
+      left: 145px;
+      width: 50px;
+      height: 20px;
+      border: 1px dashed #38bdf8;
+      background: rgba(15, 23, 42, 0.95);
+      border-radius: 3px;
+      z-index: 10;
     }
-    /* Yuzde gostergesi */
-    .paste-pct {
-      position: absolute; bottom: 3px; left: 50%; transform: translateX(-50%);
-      font-size: 9px; font-weight: bold; color: #a3e635;
-      pointer-events: none; z-index: 25; white-space: nowrap;
-      text-shadow: 0 0 4px rgba(0,0,0,0.9);
+    .slot-cpufan .slot-text { font-size: 8px; color: #38bdf8; }
+
+    .slot-ram { width: 42px; height: 130px; }
+    .slot-m2  { width: 140px; height: 38px; margin: 25px 0 15px 0; }
+    .slot-cmos { width: 42px; height: 42px; border-radius: 50%; margin-bottom: 15px; border: 2px dashed #94a3b8; }
+    .slot-gpu { width: 480px; height: 52px; }
+
+    .slot-power {
+      position: absolute;
+      right: 35px;
+      top: 130px;
+      width: 36px;
+      height: 160px;
+      border: 2px dashed #f59e0b;
     }
-    /* Fan yerlesince kalan yayili tabaka */
-    .paste-layer {
-      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-      border-radius: 3px; pointer-events: none; z-index: 1;
-      background: linear-gradient(135deg,
-        rgba(148,163,184,0.60) 0%, rgba(100,116,139,0.70) 50%, rgba(71,85,105,0.60) 100%);
+    .slot-power .slot-text { writing-mode: vertical-rl; letter-spacing: 1px; }
+
+    .slot-pwr {
+      position: absolute;
+      right: 50px;
+      bottom: 25px;
+      width: 50px;
+      height: 20px;
+      border: 1px dashed #ef4444;
+      border-radius: 3px;
     }
+    .slot-pwr .slot-text { font-size: 8px; color: #f87171; }
+
     /* ENVANTER */
     .inventory-container {
-      width: 920px; background: #2b170e; border: 2px solid #3d2314;
-      border-radius: 12px; padding: 15px 25px 20px 25px; box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+      width: 960px;
+      background: #2b170e;
+      border: 2px solid #3d2314;
+      border-radius: 12px;
+      padding: 15px 25px 20px 25px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.4);
     }
-    .inventory-title { color: #e2b083; font-size: 12px; font-weight: bold; margin-bottom: 15px; }
+
+    .inventory-title {
+      color: #e2b083;
+      font-size: 12px;
+      font-weight: bold;
+      margin-bottom: 15px;
+    }
+
     .inventory {
-      display: flex; align-items: center; justify-content: flex-start;
-      gap: 20px; overflow-x: auto; min-height: 145px; position: relative;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      overflow-x: auto;
+      min-height: 145px;
+      padding-bottom: 5px;
     }
-    /* PARCALAR */
+
+    /* PARÇALAR */
     .part {
-      cursor: grab; border-radius: 6px;
-      display: flex; flex-direction: column; align-items: center; justify-content: center;
-      color: #fff; font-weight: bold; font-size: 11px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.3); flex-shrink: 0; position: relative; touch-action: none;
+      cursor: grab;
+      border-radius: 6px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-weight: bold;
+      font-size: 11px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+      flex-shrink: 0;
+      position: relative;
+      touch-action: none;
     }
     .part * { pointer-events: none; }
     .part:active { cursor: grabbing; }
-    .part-fan   { width: 110px; height: 110px; background: #38bdf8; }
-    .part-ram   { width: 44px;  height: 130px; background: #0ea5e9; }
-    .part-m2    { width: 140px; height: 38px;  background: #f59e0b; }
-    .part-gpu   { width: 460px; height: 52px;  background: #a855f7; }
-    .part-paste { width: 80px; height: 80px; background: linear-gradient(135deg, #64748b, #94a3b8); }
-    .part-paste.depleted { opacity: 0.4; cursor: not-allowed; filter: grayscale(0.8); }
-    /* BASLAT BUTONU */
+
+    .part-cpu    { width: 115px; height: 115px; background: linear-gradient(135deg, #cbd5e1, #64748b); color: #0f172a; border: 2px solid #475569; }
+    .part-paste  { width: 60px;  height: 40px;  background: #64748b; border: 1px solid #cbd5e1; font-size: 9px; }
+    .part-fan    { width: 115px; height: 115px; background: #0284c7; }
+    
+    .part-cpufan { width: 50px; height: 20px; background: #0369a1; border: 1px solid #38bdf8; font-size: 7px; flex-direction: row; gap: 3px; }
+    .part-pwr    { width: 50px; height: 20px; background: #7f1d1d; border: 1px solid #ef4444; font-size: 7px; flex-direction: row; gap: 3px; }
+    
+    .part-ram    { width: 42px;  height: 130px; background: #0ea5e9; }
+    .part-m2     { width: 140px; height: 38px;  background: #f59e0b; }
+    .part-cmos   { width: 42px;  height: 42px;  border-radius: 50%; background: linear-gradient(135deg, #f8fafc, #94a3b8); color: #0f172a; font-size: 8px; border: 1px solid #fff; }
+    .part-power  { width: 36px;  height: 160px; background: #334155; border: 2px solid #f59e0b; font-size: 10px; }
+    .part-power span { writing-mode: vertical-rl; }
+    .part-gpu    { width: 480px; height: 52px;  background: #9333ea; }
+
     #start-btn {
-      display: none; margin-top: 10px; padding: 14px 32px;
-      background: #10b981; color: white; font-size: 16px; font-weight: bold;
-      border: none; border-radius: 8px; cursor: pointer;
-      box-shadow: 0 0 20px rgba(16,185,129,0.6); animation: pulse 1.5s infinite;
+      display: none; margin-top: 10px; padding: 14px 40px; background: #10b981; color: white; font-size: 16px;
+      font-weight: bold; border: none; border-radius: 8px; cursor: pointer; box-shadow: 0 0 20px rgba(16, 185, 129, 0.6);
+      animation: pulse 1.5s infinite;
     }
-    @keyframes pulse {
-      0%   { transform: scale(1); }
-      50%  { transform: scale(1.05); }
-      100% { transform: scale(1); }
+    @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.04); } 100% { transform: scale(1); } }
+
+    #bios-modal {
+      display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+      background: #000; z-index: 9999; color: #00ff66;
+      font-family: 'Courier New', Courier, monospace; padding: 40px; box-sizing: border-box;
     }
+    .spinning-fan { animation: spinFan 0.25s linear infinite !important; }
+    @keyframes spinFan { 100% { transform: rotate(360deg); } }
+
+    #cpu-paste-canvas {
+      position: absolute; top: 0; left: 0; width: 115px; height: 115px;
+      z-index: 18; display: none; touch-action: none; cursor: crosshair;
+      border-radius: 4px;
+    }
+    #paste-inline-ui {
+      display: none; position: absolute; top: -35px; left: 0; width: 115px;
+      background: rgba(0,0,0,0.85); color: white; font-size: 10px;
+      padding: 4px; border-radius: 4px; text-align: center; z-index: 25;
+      border: 1px solid #475569; pointer-events: auto;
+    }
+    #paste-inline-ui button {
+      background: #ef4444; color: white; border: none; border-radius: 3px;
+      font-size: 9px; padding: 2px 5px; cursor: pointer; margin-top: 3px;
+    }
+    .spill-flash { animation: spillFlash 0.5s; }
+    @keyframes spillFlash { 0% { box-shadow: 0 0 15px 5px rgba(239, 68, 68, 0.9); } 100% { box-shadow: none; } }
+
+    /* Vidalar */
+    .screw {
+      position: absolute;
+      width: 24px;
+      height: 24px;
+      background: #94a3b8;
+      border: 2px solid #334155;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      box-shadow: 0 3px 5px rgba(0,0,0,0.5);
+      touch-action: none;
+      transition: box-shadow 0.2s, background-color 0.2s;
+    }
+    .screw.screwing {
+      box-shadow: 0 0 10px 4px rgba(16, 185, 129, 0.7) !important;
+    }
+    .screw.locked {
+      background: #334155 !important;
+      box-shadow: inset 0 3px 6px rgba(0,0,0,0.9) !important;
+      cursor: default;
+      border-color: #0f172a;
+    }
+    @keyframes screwLockFlash {
+      0% { box-shadow: 0 0 25px 10px rgba(16, 185, 129, 1); background-color: #10b981; border-color: #10b981; }
+      100% { box-shadow: inset 0 3px 6px rgba(0,0,0,0.9); background-color: #334155; border-color: #0f172a; }
+    }
+    .screw.just-locked {
+      animation: screwLockFlash 0.6s ease-out forwards;
+    }
+    .screw-tl { top: 8px; left: 8px; }
+    .screw-tr { top: 8px; right: 8px; }
+    .screw-bl { bottom: 8px; left: 8px; }
+    .screw-br { bottom: 8px; right: 8px; }
   </style>
 </head>
 <body>
 
   <div class="motherboard">
-    <div class="motherboard-title">ANAKART &bull; Z790 &bull; DDR5</div>
+    <div class="motherboard-title">ANAKART &bull; Z790 &bull; DDR5 EXPERT</div>
+
+    <!-- MİNİK CPU_FAN KABLO GİRİŞİ -->
+    <div class="slot slot-cpufan" data-accept="cpufan"><span class="slot-text">CPU_FAN</span></div>
+
     <div class="slots-upper">
-      <div class="slot slot-cpu" data-accept="cpu">
-        <div class="slot-overlay" id="cpu-overlay" style="background:rgba(0,0,0,0.6);">&#128274; MANDAL KAPALI<br>(A&ccedil;mak i&ccedil;in T&#305;kla)</div>
-        <canvas id="paste-canvas" width="106" height="106"></canvas>
+      <!-- CPU SOKETİ -->
+      <div class="slot slot-cpu" data-accept="cpu" id="cpu-slot">
+        <canvas id="cpu-paste-canvas" width="115" height="115"></canvas>
+        <div id="paste-inline-ui">Kapsama: <span id="cov-val">0</span>%<br><button id="clear-paste-inline">TEMİZLE</button></div>
+        <div class="slot-overlay" id="cpu-overlay" style="background: rgba(0,0,0,0.6);">🔒 MANDAL KAPALI<br>(Tıkla)</div>
+        <div class="thermal-paste-dot" id="paste-dot"></div>
       </div>
-      <div class="slot slot-fan" data-accept="fan"><span class="slot-text">CPU FANI</span></div>
+      
+      <!-- BAĞIMSIZ CPU FANI YUVASI (Geri Geldi!) -->
+      <div class="slot slot-fan" data-accept="fan" id="fan-slot"><span class="slot-text">CPU FANI</span></div>
+      
       <div class="slot slot-ram" data-accept="ram"><span class="slot-text">RAM 1</span></div>
       <div class="slot slot-ram" data-accept="ram"><span class="slot-text">RAM 2</span></div>
     </div>
+
     <div class="slot slot-m2" data-accept="m2"><span class="slot-text">M.2 NVMe SSD</span></div>
+    <div class="slot slot-cmos" data-accept="cmos"><span class="slot-text">PİL</span></div>
     <div class="slot slot-gpu" data-accept="gpu"><span class="slot-text">PCIe X16 &mdash; EKRAN KARTI</span></div>
+
+    <div class="slot slot-power" data-accept="power"><span class="slot-text">24-PIN GÜÇ</span></div>
+    <div class="slot slot-pwr" data-accept="pwr"><span class="slot-text">JFP1/PWR</span></div>
   </div>
 
   <div class="inventory-container">
-    <div class="inventory-title">ENVANTER</div>
+    <div class="inventory-title">ENVANTER (Parçaları ve Kabloları Eksiksiz Yerleştir)</div>
     <div class="inventory" id="inventory">
       <div class="part part-cpu" data-type="cpu">
-        <div class="icon" style="font-size:18px;">&#9632;</div><span>&#304;&#351;lemci</span>
-      </div>
-      <div class="part part-fan" data-type="fan">
-        <div class="icon">&#127744;</div><span>CPU Fan&#305;</span>
-      </div>
-      <div class="part part-ram" data-type="ram">
-        <div class="icon">&#128202;</div><span>RAM 1</span>
-      </div>
-      <div class="part part-ram" data-type="ram">
-        <div class="icon">&#128202;</div><span>RAM 2</span>
-      </div>
-      <div class="part part-m2" data-type="m2">
-        <div class="icon">&#128190;</div><span>M.2 SSD</span>
-      </div>
-      <div class="part part-gpu" data-type="gpu">
-        <div class="icon">&#127918;</div><span>Ekran Kart&#305;</span>
+        <div class="icon">⏹️</div><span>İşlemci</span>
       </div>
       <div class="part part-paste" data-type="paste" id="paste-part">
-        <div class="icon" style="font-size:24px;">&#128137;</div><span>Termal Macun</span>
+        <div class="icon">🧪</div><span>Termal Macun</span>
+      </div>
+      <div class="part part-fan" data-type="fan" id="fan-part">
+        <div class="icon">🌀</div><span>CPU Fanı</span>
+      </div>
+      <div class="part part-cpufan" data-type="cpufan">
+        <span>🔌 FAN</span>
+      </div>
+      <div class="part part-pwr" data-type="pwr">
+        <span>⚡ PWR</span>
+      </div>
+      <div class="part part-ram" data-type="ram">
+        <div class="icon">📊</div><span>RAM 1</span>
+      </div>
+      <div class="part part-ram" data-type="ram">
+        <div class="icon">📊</div><span>RAM 2</span>
+      </div>
+      <div class="part part-m2" data-type="m2">
+        <div class="icon">💾</div><span>M.2 SSD</span>
+      </div>
+      <div class="part part-cmos" data-type="cmos">
+        <div class="icon">🪙</div><span>CR2032</span>
+      </div>
+      <div class="part part-power" data-type="power">
+        <div class="icon">🔌</div><span>24-PIN</span>
+      </div>
+      <div class="part part-gpu" data-type="gpu">
+        <div class="icon">🎮</div><span>Ekran Kartı</span>
       </div>
     </div>
   </div>
 
-  <button id="start-btn">&#9889; B&#304;LG&#304;SAYARI BA&#350;LAT</button>
+  <button id="start-btn">⚡ BİLGİSAYARI BAŞLAT</button>
+
+  <div id="bios-modal">
+    <pre id="bios-text"></pre>
+  </div>
+
 
   <script>
-    // STATE: locked_empty -> open -> installed -> locked_full -> paste_applied
-    let cpuState    = "locked_empty";
+    let cpuState = 'locked_empty'; 
+    let fanMounted = false;
     let placedCount = 0;
-    const totalParts = 6;
+    const totalParts = 10; 
+    
+    const cpuSlot = document.getElementById('cpu-slot');
+    const cpuOverlay = document.getElementById('cpu-overlay');
+    const pasteDot = document.getElementById('paste-dot');
+    const inventory = document.getElementById('inventory');
+    const startBtn = document.getElementById('start-btn');
+    const fanPart = document.getElementById('fan-part');
+    const biosModal = document.getElementById('bios-modal');
+    const biosText = document.getElementById('bios-text');
 
-    const cpuSlot     = document.querySelector(".slot-cpu");
-    const cpuOverlay  = document.getElementById("cpu-overlay");
-    const inventory   = document.getElementById("inventory");
-    const startBtn    = document.getElementById("start-btn");
-    const pastePart   = document.getElementById("paste-part");
-    const pasteCanvas = document.getElementById("paste-canvas");
-    const ctx         = pasteCanvas.getContext("2d");
-
-    let spreadActive  = false;
-    let isPainting    = false;
-    let spreadPct     = 0;
-    let paintCallN    = 0;
-    let pasteBlob     = null;
-    let pastePctEl    = null;
-    let pasteLayerEl  = null;
-
-    const CANVAS_W = 106;
-    const CANVAS_H = 106;
-    const BRUSH_R  = 13;
-    const DONE_PCT = 80;
-
-    // 1. CPU MANDAL
-    cpuSlot.addEventListener("click", () => {
-      if (spreadActive) return;
-      if (cpuState === "locked_empty") {
-        cpuState = "open";
-        cpuSlot.style.borderColor = "#00ffcc";
-        cpuOverlay.style.background = "rgba(0,255,204,0.15)";
-        cpuOverlay.innerHTML = "\uD83D\uDD13 SOKET A\u00c7IK<br>(\u0130\u015flemciyi B\u0131rak)";
-      } else if (cpuState === "installed") {
-        cpuState = "locked_full";
-        cpuSlot.style.borderColor = "#94a3b8";
-        cpuSlot.style.boxShadow = "inset 0 0 15px rgba(0,0,0,0.8)";
-        cpuOverlay.style.background = "rgba(0,0,0,0.5)";
-        cpuOverlay.innerHTML =
-          "<div style=\"font-size:32px;animation:lockStamp 0.4s cubic-bezier(0.175,0.885,0.32,1.275) forwards;\">\uD83D\uDD12</div>" +
-          "<div style=\"margin-top:5px;color:#10b981;font-size:14px;\">K\u0130L\u0130TLEND\u0130</div>" +
-          "<div style=\"margin-top:6px;color:#94a3b8;font-size:10px;\">\uD83E\uDDF4 TERMAL MACUN S\u00dcR</div>";
+    cpuSlot.addEventListener('click', () => {
+      if (cpuState === 'locked_empty') {
+        cpuState = 'open';
+        cpuSlot.style.borderColor = '#00ffcc';
+        cpuOverlay.style.background = 'rgba(0, 255, 204, 0.15)';
+        cpuOverlay.innerHTML = '🔓 SOKET AÇIK<br>(İşlemciyi Bırak)';
+      } else if (cpuState === 'installed') {
+        cpuState = 'locked_full';
+        cpuSlot.style.borderColor = '#94a3b8';
+        cpuOverlay.style.background = 'rgba(0,0,0,0.5)';
+        cpuOverlay.innerHTML = '🔒 KİLİTLENDİ<br><span style="color:#f59e0b; font-size:9px;">(Termal Macun Sür)</span>';
       }
     });
 
-    // 2. SPATULA YAYMA MINI-OYUNU
-    function startSpreadMinigame(part) {
-      if (cpuState !== "locked_full") {
-        alert("Uyar\u0131: Termal macun uygulamak i\u00e7in \u00f6nce i\u015flemciyi tak\u0131p mand al\u0131 kilitlemelisin!");
-        returnToInventory(part);
-        return;
-      }
-      returnToInventory(part);
-      spreadActive = true;
-      isPainting   = false;
-      spreadPct    = 0;
-      paintCallN   = 0;
-      ctx.clearRect(0, 0, CANVAS_W, CANVAS_H);
+    let draggedEl = null;
+    let shiftX = 0;
+    let shiftY = 0;
+    let currentPastePart = null;
 
-      pasteBlob = document.createElement("div");
-      pasteBlob.className = "paste-blob";
-      cpuSlot.appendChild(pasteBlob);
-
-      pastePctEl = document.createElement("div");
-      pastePctEl.className = "paste-pct";
-      pastePctEl.textContent = "%0";
-      cpuSlot.appendChild(pastePctEl);
-
-      cpuOverlay.style.background = "rgba(0,0,0,0.52)";
-      cpuOverlay.style.pointerEvents = "none";
-      cpuOverlay.innerHTML =
-        "<div style=\"font-size:9px;color:#fbbf24;line-height:1.6;padding:0 5px;text-align:center;\">" +
-        "Macunu t\u00fcm y\u00fczeye<br>s\u00fcr\u00fckleyerek yay!<br>" +
-        "<span style=\"color:#a3e635;\">Hedef: %" + DONE_PCT + "</span></div>";
-
-      pasteCanvas.classList.add("active");
-      pasteCanvas.addEventListener("pointerdown", onPaintStart);
-      pasteCanvas.addEventListener("pointermove",  onPaintMove);
-      pasteCanvas.addEventListener("pointerup",    onPaintEnd);
-      pasteCanvas.addEventListener("pointerleave", onPaintEnd);
+    const cpuPasteCanvas = document.getElementById('cpu-paste-canvas');
+    const cpuPasteCtx = cpuPasteCanvas.getContext('2d');
+    const pasteInlineUi = document.getElementById('paste-inline-ui');
+    const covVal = document.getElementById('cov-val');
+    const clearPasteBtn = document.getElementById('clear-paste-inline');
+    
+    let isPainting = false;
+    let hasSpilled = false;
+    let pasteCoverage = 0;
+    
+    const cpuSize = 115;
+    const gridCols = 23; // 5x5 px cells for 115x115
+    const gridRows = 23;
+    let coverageGrid = Array(gridCols).fill().map(() => Array(gridRows).fill(false));
+    
+    function startPasteMinigame() {
+      cpuState = 'painting';
+      cpuPasteCanvas.style.display = 'block';
+      pasteInlineUi.style.display = 'block';
+      cpuOverlay.innerHTML = 'MACUN SÜR';
+      cpuOverlay.style.background = 'rgba(0,0,0,0.6)';
+      clearPasteGame();
+      
+      document.addEventListener('pointermove', checkSpill);
+    }
+    
+    function clearPasteGame() {
+      cpuPasteCtx.clearRect(0, 0, cpuPasteCanvas.width, cpuPasteCanvas.height);
+      coverageGrid = Array(gridCols).fill().map(() => Array(gridRows).fill(false));
+      isPainting = false;
+      hasSpilled = false;
+      pasteCoverage = 0;
+      covVal.innerText = '0';
+      cpuPasteCanvas.classList.remove('spill-flash');
+      cpuOverlay.innerHTML = 'MACUN SÜR';
+      cpuOverlay.style.background = 'rgba(0,0,0,0.6)';
+    }
+    
+    clearPasteBtn.addEventListener('click', clearPasteGame);
+    
+    function getCanvasPos(e) {
+      const rect = cpuPasteCanvas.getBoundingClientRect();
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      return { x: clientX - rect.left, y: clientY - rect.top };
     }
 
-    function onPaintStart(e) {
-      e.preventDefault();
+    function checkSpill(e) {
+      if (!isPainting || hasSpilled) return;
+      const rect = cpuPasteCanvas.getBoundingClientRect();
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      
+      // Allow a tiny margin of 2px
+      if (clientX < rect.left - 2 || clientX > rect.right + 2 || 
+          clientY < rect.top - 2 || clientY > rect.bottom + 2) {
+        triggerSpill();
+      }
+    }
+    
+    function triggerSpill() {
+      hasSpilled = true;
+      isPainting = false;
+      cpuOverlay.innerHTML = '⚠️ TAŞTI!';
+      cpuOverlay.style.background = 'rgba(239, 68, 68, 0.8)';
+      cpuPasteCanvas.classList.remove('spill-flash');
+      void cpuPasteCanvas.offsetWidth; 
+      cpuPasteCanvas.classList.add('spill-flash');
+    }
+    
+    function startPainting(e) {
+      if (hasSpilled || cpuState !== 'painting') return;
       isPainting = true;
-      if (pasteBlob) pasteBlob.style.opacity = "0.2";
       paint(e);
     }
-    function onPaintMove(e) {
-      if (!isPainting) return;
-      e.preventDefault();
-      paint(e);
+    
+    function stopPainting() {
+      isPainting = false;
+      cpuPasteCtx.beginPath();
     }
-    function onPaintEnd() { isPainting = false; }
-
+    
     function paint(e) {
-      const rect   = pasteCanvas.getBoundingClientRect();
-      const scaleX = CANVAS_W / rect.width;
-      const scaleY = CANVAS_H / rect.height;
-      const x = (e.clientX - rect.left) * scaleX;
-      const y = (e.clientY - rect.top)  * scaleY;
-
-      const grad = ctx.createRadialGradient(x, y, 0, x, y, BRUSH_R);
-      grad.addColorStop(0,   "rgba(180,190,200, 0.75)");
-      grad.addColorStop(0.6, "rgba(148,163,184, 0.58)");
-      grad.addColorStop(1,   "rgba(100,116,139, 0)");
-
-      ctx.globalCompositeOperation = "source-over";
-      ctx.beginPath();
-      ctx.arc(x, y, BRUSH_R, 0, Math.PI * 2);
-      ctx.fillStyle = grad;
-      ctx.fill();
-
-      paintCallN++;
-      if (paintCallN % 5 === 0) updateCoverage();
-    }
-
-    function updateCoverage() {
-      const data  = ctx.getImageData(0, 0, CANVAS_W, CANVAS_H).data;
-      let filled  = 0;
-      const total = CANVAS_W * CANVAS_H;
-      for (let i = 3; i < data.length; i += 4) {
-        if (data[i] > 15) filled++;
+      if (!isPainting || hasSpilled || cpuState !== 'painting') return;
+      e.preventDefault();
+      
+      const pos = getCanvasPos(e);
+      const brushRadius = 10;
+      
+      cpuPasteCtx.fillStyle = '#94a3b8';
+      cpuPasteCtx.shadowColor = '#64748b';
+      cpuPasteCtx.shadowBlur = 4;
+      cpuPasteCtx.beginPath();
+      cpuPasteCtx.arc(pos.x, pos.y, brushRadius, 0, Math.PI * 2);
+      cpuPasteCtx.fill();
+      
+      let minCol = Math.max(0, Math.floor((pos.x - brushRadius) / 5));
+      let maxCol = Math.min(gridCols - 1, Math.floor((pos.x + brushRadius) / 5));
+      let minRow = Math.max(0, Math.floor((pos.y - brushRadius) / 5));
+      let maxRow = Math.min(gridRows - 1, Math.floor((pos.y + brushRadius) / 5));
+      
+      for (let c = minCol; c <= maxCol; c++) {
+        for (let r = minRow; r <= maxRow; r++) {
+          const cellX = c * 5 + 2.5;
+          const cellY = r * 5 + 2.5;
+          const dist = Math.hypot(cellX - pos.x, cellY - pos.y);
+          if (dist <= brushRadius) {
+            coverageGrid[c][r] = true;
+          }
+        }
       }
-      spreadPct = Math.min(100, Math.round((filled / total) * 100));
-      if (pastePctEl) {
-        pastePctEl.textContent = "%" + spreadPct;
-        pastePctEl.style.color = spreadPct >= DONE_PCT ? "#22c55e" : "#a3e635";
+      
+      let covered = 0;
+      for (let c = 0; c < gridCols; c++) {
+        for (let r = 0; r < gridRows; r++) {
+          if (coverageGrid[c][r]) covered++;
+        }
       }
-      if (spreadPct >= DONE_PCT && spreadActive) finishSpread();
+      
+      pasteCoverage = Math.floor((covered / (gridCols * gridRows)) * 100);
+      covVal.innerText = pasteCoverage;
+      
+      if (pasteCoverage >= 85) {
+        completePaste();
+      }
     }
-
-    function finishSpread() {
-      spreadActive = false;
-      isPainting   = false;
-
-      pasteCanvas.classList.remove("active");
-      pasteCanvas.removeEventListener("pointerdown", onPaintStart);
-      pasteCanvas.removeEventListener("pointermove",  onPaintMove);
-      pasteCanvas.removeEventListener("pointerup",    onPaintEnd);
-      pasteCanvas.removeEventListener("pointerleave", onPaintEnd);
-
-      if (pasteBlob)  { pasteBlob.remove();  pasteBlob  = null; }
-      if (pastePctEl) { pastePctEl.remove(); pastePctEl = null; }
-
-      pasteCanvas.style.opacity = "0";
-      pasteCanvas.style.pointerEvents = "none";
-
-      pasteLayerEl = document.createElement("div");
-      pasteLayerEl.className = "paste-layer";
-      cpuSlot.appendChild(pasteLayerEl);
-
-      cpuState = "paste_applied";
-      pastePart.classList.add("depleted");
-      pastePart.dataset.type = "paste_used";
-      const lbl = pastePart.querySelector("span");
-      if (lbl) lbl.textContent = "T\u00fckendi";
-
-      cpuOverlay.style.background = "transparent";
-      cpuOverlay.innerHTML =
-        "<div style=\"margin-top:68px;background:rgba(0,0,0,0.72);border-radius:4px;" +
-        "padding:3px 8px;font-size:10px;white-space:nowrap;\">" +
-        "\u2728 Harika Yay\u0131l\u0131m! (%" + spreadPct + " Kapland\u0131)</div>";
-
-      alert("\u2728 Harika Yay\u0131l\u0131m! (%" + spreadPct + " Kapland\u0131)\nArt\u0131k CPU fan\u0131n\u0131 takabilirsin.");
+    
+    function completePaste() {
+      document.removeEventListener('pointermove', checkSpill);
+      cpuState = 'paste_applied';
+      cpuPasteCanvas.style.display = 'none';
+      pasteInlineUi.style.display = 'none';
+      cpuOverlay.style.background = 'rgba(16, 185, 129, 0.3)';
+      cpuOverlay.innerHTML = '✅ MACUNLANDI <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="vertical-align: middle; margin-left: 4px;"><path d="M15 11V4a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v7l-3 4v3a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1v-3l-3-4z"/></svg>';
+      pasteDot.classList.add('applied');
+      
+      if (currentPastePart) {
+        currentPastePart.remove(); 
+      }
     }
+    
+    cpuPasteCanvas.addEventListener('pointerdown', startPainting);
+    cpuPasteCanvas.addEventListener('pointermove', paint);
+    cpuPasteCanvas.addEventListener('pointerup', stopPainting);
+    cpuPasteCanvas.addEventListener('pointercancel', stopPainting);
 
-    // 3. POINTER DRAG SISTEMI
-    let shiftX = 0, shiftY = 0;
+    document.querySelectorAll('.part').forEach(part => {
+      part.addEventListener('pointerdown', function(e) {
+        if (part.parentElement.classList.contains('slot')) return;
 
-    document.querySelectorAll(".part").forEach(part => {
-      part.addEventListener("pointerdown", function(e) {
-        if (part.parentElement.classList.contains("slot")) return;
-        if (part.classList.contains("depleted")) return;
-
+        draggedEl = part;
         const rect = part.getBoundingClientRect();
         shiftX = e.clientX - rect.left;
         shiftY = e.clientY - rect.top;
 
-        part.style.position = "absolute";
-        part.style.zIndex   = 1000;
+        part.style.position = 'absolute';
+        part.style.zIndex = 1000;
         document.body.appendChild(part);
+
         moveAt(e.pageX, e.pageY);
 
-        function moveAt(px, py) {
-          part.style.left = (px - shiftX) + "px";
-          part.style.top  = (py - shiftY) + "px";
+        function moveAt(pageX, pageY) {
+          part.style.left = pageX - shiftX + 'px';
+          part.style.top = pageY - shiftY + 'px';
         }
-        function onMove(ev) { moveAt(ev.pageX, ev.pageY); }
-        document.addEventListener("pointermove", onMove);
+        function onPointerMove(e) { moveAt(e.pageX, e.pageY); }
 
-        part.onpointerup = function(ev) {
-          document.removeEventListener("pointermove", onMove);
+        document.addEventListener('pointermove', onPointerMove);
+
+        part.onpointerup = function(e) {
+          document.removeEventListener('pointermove', onPointerMove);
           part.onpointerup = null;
 
-          part.style.visibility = "hidden";
-          const below = document.elementFromPoint(ev.clientX, ev.clientY);
-          part.style.visibility = "visible";
+          part.style.visibility = 'hidden';
+          let elemBelow = document.elementFromPoint(e.clientX, e.clientY);
+          part.style.visibility = 'visible';
 
-          if (!below) { returnToInventory(part); return; }
+          if (!elemBelow) { returnToInventory(part); return; }
 
-          const targetSlot = below.closest(".slot");
-          const partType   = part.dataset.type;
+          let targetSlot = elemBelow.closest('.slot');
+          let partType = part.dataset.type;
 
-          if (partType === "paste") {
-            if (targetSlot && targetSlot.classList.contains("slot-cpu")) {
-              startSpreadMinigame(part);
+          if (partType === 'paste') {
+            if (targetSlot === cpuSlot) {
+              if (cpuState !== 'locked_full') {
+                alert("Önce işlemciyi takıp kilitlemelisin!");
+                returnToInventory(part);
+              } else {
+                // Open inline Paste Minigame
+                part.style.display = 'none'; // hide it temporarily
+                currentPastePart = part;
+                startPasteMinigame();
+              }
             } else {
               returnToInventory(part);
             }
@@ -390,60 +611,190 @@
           }
 
           if (targetSlot && targetSlot.dataset.accept === partType) {
-            if (partType === "cpu") {
-              if (cpuState !== "open") {
-                alert("Uyar\u0131: \u00d6nce anakart \u00fczerindeki CPU soket mand al\u0131na t\u0131klayarak kilidi a\u00e7mal\u0131s\u0131n!");
+            
+            if (partType === 'cpu') {
+              if (cpuState !== 'open') {
+                alert("Önce soket mandalına tıklayarak kilidi açmalısın!");
                 returnToInventory(part);
+                return;
               } else {
-                cpuState = "installed";
-                cpuOverlay.style.background = "rgba(239,68,68,0.85)";
-                cpuOverlay.innerHTML = "\u26A0\uFE0F MANDALI KAPAT<br>(T\u0131kla)";
+                cpuState = 'installed';
+                cpuOverlay.style.background = 'rgba(239, 68, 68, 0.85)';
+                cpuOverlay.innerHTML = '⚠️ MANDALI KAPAT<br>(Tıkla)';
+                placeInSlot(part, targetSlot); 
+              }
+            } 
+            else if (partType === 'fan') {
+              if (cpuState !== 'paste_applied') {
+                alert("İşlemciye termal macun sürmeden fanı takamazsın!");
+                returnToInventory(part);
+                return;
+              } else {
+                placeInSlot(part, targetSlot, true);
+                startScrewingMinigame(part);
+              }
+            }
+            else if (partType === 'cpufan') {
+              if (!fanMounted) {
+                alert("Önce CPU Fanını yerine oturtmalısın!");
+                returnToInventory(part);
+                return;
+              } else {
                 placeInSlot(part, targetSlot);
               }
-            } else if (partType === "fan") {
-              if (cpuState !== "paste_applied") {
-                alert("Uyar\u0131: So\u011futucuyu takmadan \u00f6nce i\u015flemciye termal macun uygulam al\u0131s\u0131n!");
-                returnToInventory(part);
-              } else {
-                if (pasteLayerEl) pasteLayerEl.style.zIndex = "0";
-                placeInSlot(part, targetSlot);
-              }
-            } else if (targetSlot.children.length <= 2) {
+            }
+            else {
               placeInSlot(part, targetSlot);
-            } else {
-              returnToInventory(part);
             }
           } else {
             returnToInventory(part);
           }
         };
       });
-
-      part.ondragstart = () => false;
+      part.ondragstart = function() { return false; };
     });
 
-    // 4. YARDIMCI FONKSIYONLAR
-    function placeInSlot(part, slot) {
-      const txt = slot.querySelector(".slot-text");
-      if (txt) txt.style.display = "none";
+    function placeInSlot(part, slot, skipCount = false) {
+      const slotText = slot.querySelector('.slot-text');
+      if (slotText) slotText.style.display = 'none';
+
       slot.appendChild(part);
-      part.style.position = "relative";
-      part.style.left = part.style.top = "auto";
-      part.style.width = "100%"; part.style.height = "100%";
-      part.style.margin = "0"; part.style.zIndex = "1";
+      part.style.position = 'absolute';
+      part.style.left = '0';
+      part.style.top = '0';
+      part.style.width = '100%';
+      part.style.height = '100%';
+      part.style.margin = '0';
+      part.style.zIndex = '5';
+      
+      if(part.dataset.type === 'cpufan' || part.dataset.type === 'pwr') {
+        const textSpan = part.querySelector('span');
+        if(textSpan) textSpan.style.display = 'none';
+      }
+      
+      if (!skipCount) {
+        incrementPlacedCount();
+      }
+    }
+
+    function incrementPlacedCount() {
       placedCount++;
-      if (placedCount === totalParts) startBtn.style.display = "block";
+      if (placedCount === totalParts) {
+        startBtn.style.display = 'block';
+      }
+    }
+
+    function startScrewingMinigame(fanPart) {
+      cpuState = 'screwing_fan';
+      
+      const screwPositions = ['tl', 'tr', 'bl', 'br'];
+      let screwsLocked = 0;
+      
+      screwPositions.forEach(pos => {
+        const screw = document.createElement('div');
+        screw.className = `screw screw-${pos}`;
+        
+        let progress = 0; 
+        let interval = null;
+        let isLocked = false;
+        
+        const screwVisual = document.createElement('div');
+        screwVisual.style.width = '100%';
+        screwVisual.style.height = '100%';
+        screwVisual.style.borderRadius = '50%';
+        screwVisual.style.display = 'flex';
+        screwVisual.style.alignItems = 'center';
+        screwVisual.style.justifyContent = 'center';
+        screwVisual.innerHTML = '+';
+        screwVisual.style.color = '#334155';
+        screwVisual.style.fontWeight = 'bold';
+        screwVisual.style.fontSize = '14px';
+        screwVisual.style.transition = 'transform 0.05s linear';
+        
+        screw.style.background = `conic-gradient(#10b981 0%, #94a3b8 0%)`;
+        
+        screw.appendChild(screwVisual);
+
+        const down = (e) => {
+          if (isLocked) return;
+          e.preventDefault();
+          e.stopPropagation();
+          screw.classList.add('screwing');
+          interval = setInterval(() => {
+            progress += 1.5; 
+            if (progress >= 100) progress = 100;
+            const rotation = progress * 7.2;
+            screwVisual.style.transform = `rotate(${rotation}deg)`;
+            screw.style.background = `conic-gradient(#10b981 ${progress}%, #94a3b8 ${progress}%)`;
+            
+            if (progress >= 100) {
+              clearInterval(interval);
+              isLocked = true;
+              screw.classList.remove('screwing');
+              screw.classList.add('locked');
+              screw.classList.add('just-locked');
+              screwVisual.style.transform = `rotate(720deg)`;
+              screwVisual.innerHTML = '✔';
+              screwVisual.style.color = '#10b981';
+              screwsLocked++;
+              if (screwsLocked === 4) {
+                fanMounted = true;
+                cpuState = 'fan_mounted';
+                incrementPlacedCount();
+              }
+            }
+          }, 20);
+        };
+        
+        const up = (e) => {
+          if (interval) clearInterval(interval);
+          screw.classList.remove('screwing');
+        };
+        
+        screw.addEventListener('pointerdown', down);
+        document.addEventListener('pointerup', up);
+        document.addEventListener('pointercancel', up);
+        
+        fanPart.appendChild(screw);
+      });
     }
 
     function returnToInventory(part) {
       inventory.appendChild(part);
-      part.style.position = "relative";
-      part.style.left = part.style.top = "auto";
-      part.style.zIndex = "1";
+      part.style.position = 'relative';
+      part.style.left = 'auto';
+      part.style.top = 'auto';
+      part.style.zIndex = '1';
     }
 
-    startBtn.addEventListener("click", () => {
-      alert("Sistem sorunsuz \u00e7al\u0131\u015ft\u0131r\u0131ld\u0131! Eline sa\u011fl\u0131k.");
+    startBtn.addEventListener('click', () => {
+      fanPart.querySelector('.icon').classList.add('spinning-fan');
+      biosModal.style.display = 'block';
+
+      const bootSequence = [
+        "BIOS DATE: 09/11/2026 15:15:00 VER: 2.10.128",
+        "Power Signal (PWR_SW): OK",
+        "CPU: Intel Core / AMD Ryzen Detected @ 4.80GHz",
+        "Thermal Interface Material: APPLIED (TDP Normal)",
+        "CPU_FAN Speed: 1520 RPM ... OPTIMAL",
+        "Memory: 32768MB OK (DDR5 Dual Channel)",
+        "Storage: M.2 NVMe Primary SSD OK",
+        "PCIe Slot 1: Discrete GPU Initialized",
+        "CMOS Battery: 3.28V Normal",
+        "ATX 24-Pin Rail: 12V / 5V / 3.3V STABLE",
+        "Booting into OS...",
+        "\n⚡ TEBRİKLER! TÜM PARÇALAR, TERMAL MACUN VE KABLOLAMA EKSİKSİZ TAMAMLANDI!"
+      ];
+
+      let lineIndex = 0;
+      function printLine() {
+        if (lineIndex < bootSequence.length) {
+          biosText.innerText += bootSequence[lineIndex] + "\n";
+          lineIndex++;
+          setTimeout(printLine, 280);
+        }
+      }
+      printLine();
     });
   </script>
 </body>
