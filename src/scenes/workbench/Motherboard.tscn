@@ -1,0 +1,10 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/scenes/workbench/Motherboard.gd" id="1_mb"]
+
+[node name="Motherboard" type="Node2D"]
+script = ExtResource("1_mb")
+
+[node name="PCB" type="Sprite2D" parent="."]
+
+[node name="Slots" type="Node2D" parent="."]
