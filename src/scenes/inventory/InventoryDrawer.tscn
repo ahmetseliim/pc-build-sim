@@ -1,0 +1,28 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/scenes/inventory/InventoryDrawer.gd" id="1_drawer"]
+
+[node name="InventoryDrawer" type="Control"]
+layout_mode = 3
+anchors_preset = 0
+script = ExtResource("1_drawer")
+
+[node name="DrawerHandle" type="Button" parent="."]
+layout_mode = 0
+offset_left = 440.0
+offset_top = -40.0
+offset_right = 640.0
+offset_bottom = 0.0
+text = "▲ ENVANTER ▲"
+
+[node name="Panel" type="PanelContainer" parent="."]
+layout_mode = 0
+offset_right = 1080.0
+offset_bottom = 400.0
+
+[node name="ScrollContainer" type="ScrollContainer" parent="Panel"]
+layout_mode = 2
+
+[node name="ItemGrid" type="GridContainer" parent="Panel/ScrollContainer"]
+layout_mode = 2
+columns = 4

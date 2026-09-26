@@ -1,0 +1,17 @@
+# Godot editor cache
+.godot/
+
+# OS dosyaları
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Export build çıktıları
+build/
+*.apk
+*.aab
+*.ipa
+
+# IDE
+.vscode/
+.idea/

@@ -1,0 +1,40 @@
+; Engine configuration file.
+; It's best edited using the editor UI and not directly,
+; since the parameters that go here are not all obvious.
+;
+; Format:
+;   [section]
+;   key=value
+
+config_version=5
+
+[application]
+
+config/name="PC Build Simulator"
+config/description="Sürükle-bırak PC toplama simülasyonu"
+run/main_scene="res://src/scenes/main/Main.tscn"
+config/features=PackedStringArray("4.3", "GL Compatibility")
+
+[autoload]
+
+EventBus="*res://src/autoload/EventBus.gd"
+GameManager="*res://src/autoload/GameManager.gd"
+InventoryManager="*res://src/autoload/InventoryManager.gd"
+AudioManager="*res://src/autoload/AudioManager.gd"
+
+[display]
+
+window/size/viewport_width=1080
+window/size/viewport_height=1920
+window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
+window/handheld/orientation="portrait"
+
+[input_devices]
+
+pointing/emulate_touch_from_mouse=true
+pointing/emulate_mouse_from_touch=true
+
+[rendering]
+
+renderer/rendering_method="gl_compatibility"

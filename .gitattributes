@@ -1,0 +1,20 @@
+# Godot text dosyaları LF satır sonu kullansın
+*.gd text eol=lf
+*.tscn text eol=lf
+*.tres text eol=lf
+*.cfg text eol=lf
+*.md text eol=lf
+*.godot text eol=lf
+
+# Binary dosyalar
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.svg binary
+*.wav binary
+*.ogg binary
+*.mp3 binary
+*.ttf binary
+*.otf binary
+*.woff binary
+*.woff2 binary
