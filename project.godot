@@ -3,8 +3,8 @@
 ; since the parameters that go here are not all obvious.
 ;
 ; Format:
-;   [section]
-;   key=value
+;   [section] ; section goes between []
+;   param=value ; assign values to parameters
 
 config_version=5
 
@@ -33,7 +33,6 @@ window/handheld/orientation="portrait"
 [input_devices]
 
 pointing/emulate_touch_from_mouse=true
-pointing/emulate_mouse_from_touch=true
 
 [rendering]
 

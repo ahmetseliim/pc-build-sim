@@ -1,10 +1,67 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=4 format=3 uid="uid://c3m7x8n9p2q1"]
 
 [ext_resource type="Script" path="res://src/scenes/workbench/Motherboard.gd" id="1_mb"]
+[ext_resource type="Texture2D" path="res://assets/sprites/motherboard/board.png" id="2_tex"]
+[ext_resource type="PackedScene" path="res://src/scenes/workbench/MotherboardSlot.tscn" id="3_slot"]
 
 [node name="Motherboard" type="Node2D"]
+position = Vector2(540, 700)
 script = ExtResource("1_mb")
 
-[node name="PCB" type="Sprite2D" parent="."]
-
 [node name="Slots" type="Node2D" parent="."]
+
+[node name="CPU_Socket" parent="Slots" instance=ExtResource("3_slot")]
+offset_left = -300.0
+offset_top = -150.0
+offset_right = -185.0
+offset_bottom = -35.0
+slot_id = "cpu_socket"
+accepted_type = "cpu"
+slot_label = "CPU"
+
+[node name="RAM_1" parent="Slots" instance=ExtResource("3_slot")]
+offset_left = -100.0
+offset_top = -150.0
+offset_right = -58.0
+offset_bottom = -20.0
+slot_id = "ram_1"
+accepted_type = "ram"
+slot_label = "RAM1"
+
+[node name="RAM_2" parent="Slots" instance=ExtResource("3_slot")]
+offset_left = -30.0
+offset_top = -150.0
+offset_right = 12.0
+offset_bottom = -20.0
+slot_id = "ram_2"
+accepted_type = "ram"
+slot_label = "RAM2"
+
+[node name="GPU_Slot" parent="Slots" instance=ExtResource("3_slot")]
+offset_left = -350.0
+offset_top = 50.0
+offset_right = 130.0
+offset_bottom = 102.0
+slot_id = "gpu_1"
+accepted_type = "gpu"
+slot_label = "GPU"
+
+[node name="M2_Slot" parent="Slots" instance=ExtResource("3_slot")]
+offset_left = -150.0
+offset_top = 0.0
+offset_right = -10.0
+offset_bottom = 38.0
+slot_id = "m2_1"
+accepted_type = "m2"
+slot_label = "M.2"
+
+[node name="ATX_Power" parent="Slots" instance=ExtResource("3_slot")]
+offset_left = 350.0
+offset_top = -100.0
+offset_right = 386.0
+offset_bottom = 60.0
+slot_id = "power_24"
+accepted_type = "power"
+slot_label = "PWR"
+
+

@@ -1,72 +1,111 @@
 class_name MotherboardSlot
-extends Area2D
+extends Control
 
-# Anakart üzerindeki tekrar kullanılabilir slot bileşeni
-# CPU, RAM, GPU, M.2 gibi farklı parça tipleri için kullanılır.
-
-@export var slot_id: String = "" ## Slot tanımlayıcısı (orn: "cpu_socket", "ram_1")
-@export var accepted_type: String = "" ## Kabul edilen parça tipi (orn: "cpu", "ram")
-@export var accepted_socket: String = "" ## Kabul edilen soket tipi (orn: "AM5", "LGA1700")
-@export var slot_label: String = "" ## Slot etiketi (görselde gözükecek)
-@export var requires_state: String = "" ## Bu slot için gereken GameManager cpu_state
+@export var slot_id: String = "" 
+@export var accepted_type: String = "" 
+@export var accepted_socket: String = "" 
+@export var slot_label: String = "" 
+@export var requires_state: String = "" 
 
 var is_occupied: bool = false
 var installed_part: ComponentData = null
+var is_highlighted: bool = false
 
-# Slot doluyken görsel güncelleme sinyali
 signal slot_filled(slot: MotherboardSlot)
 signal slot_emptied(slot: MotherboardSlot)
 
 func _ready() -> void:
-	# Fare/touch algılama için giriş olaylarını etkinleştir
-	input_pickable = true
-	monitoring = true
-	monitorable = true
+	if slot_label != "":
+		$SlotLabel.text = slot_label
 
-# Parça yerleştirmeyi dener
+func _draw() -> void:
+	var rect = Rect2(Vector2.ZERO, size)
+	
+	if is_occupied:
+		# Draw the installed part's background
+		draw_rect(rect, installed_part.bg_color)
+		
+		# Draw border
+		var border_color = Color(1.0, 1.0, 1.0, 0.2)
+		draw_rect(rect, border_color, false, 2.0)
+		
+		# Icon text is drawn by a Label node created dynamically or we just draw string
+		var font = ThemeDB.fallback_font
+		var text_size = font.get_string_size(installed_part.icon_text, HORIZONTAL_ALIGNMENT_CENTER, -1, 32)
+		var text_pos = (size - text_size) / 2.0 + Vector2(0, font.get_ascent(32))
+		draw_string(font, text_pos, installed_part.icon_text, HORIZONTAL_ALIGNMENT_CENTER, -1, 32)
+		
+	else:
+		# Draw empty slot (dashed look simulation)
+		var bg_color = Color(15.0/255.0, 23.0/255.0, 42.0/255.0, 0.6)
+		if is_highlighted:
+			bg_color = Color(0.1, 0.4, 0.2, 0.8) # Green highlight
+			
+		draw_rect(rect, bg_color)
+		
+		# Draw solid border (dashed is complex in raw _draw, solid is fine for now)
+		var border_color = Color("#ef4444") if accepted_type == "cpu" else Color("#475569")
+		if is_highlighted:
+			border_color = Color("#4ade80")
+			
+		draw_rect(rect, border_color, false, 2.0)
+
+func _can_drop_data(at_position: Vector2, data: Variant) -> bool:
+	if is_occupied:
+		return false
+	
+	if typeof(data) == TYPE_DICTIONARY and data.has("type") and data["type"] == "component":
+		var part = data["data"] as ComponentData
+		if part.part_type == accepted_type:
+			highlight(true)
+			return true
+			
+	highlight(false)
+	return false
+
+func _drop_data(at_position: Vector2, data: Variant) -> void:
+	highlight(false)
+	if typeof(data) == TYPE_DICTIONARY and data.has("data"):
+		var part = data["data"] as ComponentData
+		try_install(part)
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_DRAG_END:
+		highlight(false)
+
 func try_install(part: ComponentData) -> bool:
 	if is_occupied:
-		print("Slot zaten dolu: %s" % slot_id)
 		return false
 	
-	# Tip kontrolu
-	if part.part_type != accepted_type:
-		print("Yanlış parça tipi! Beklenen: %s, Gelen: %s" % [accepted_type, part.part_type])
-		return false
-	
-	# Soket kontrolu (eğer tanımlıysa)
 	if accepted_socket != "" and part.socket != accepted_socket:
-		print("Uyumsuz soket! Beklenen: %s, Gelen: %s" % [accepted_socket, part.socket])
 		return false
 	
-	# State kontrolu (CPU için mandal açık mı?)
 	if requires_state != "" and GameManager.cpu_state != requires_state:
-		print("Gerekli durum sağlanmadı: %s" % requires_state)
 		return false
 	
-	# Yerleştir
 	installed_part = part
 	is_occupied = true
+	$SlotLabel.visible = false
+	queue_redraw()
+	
 	slot_filled.emit(self)
 	EventBus.part_installed.emit(slot_id, part)
-	print("✅ %s parçası %s slotuna yerleştirildi." % [part.part_name, slot_id])
 	return true
 
-# Parçayı çıkar
 func remove_part() -> ComponentData:
 	if not is_occupied:
 		return null
 	
-	var removed: ComponentData = installed_part
+	var removed = installed_part
 	installed_part = null
 	is_occupied = false
+	$SlotLabel.visible = true
+	queue_redraw()
+	
 	slot_emptied.emit(self)
 	EventBus.part_removed.emit(slot_id)
 	return removed
 
-# Vurgulama (parça üzerinde sürüklenirken)
 func highlight(enable: bool) -> void:
-	if enable:
-		modulate = Color(0.5, 1.0, 0.5, 1.0) # Yeşil vurgu
-	else:
-		modulate = Color(1.0, 1.0, 1.0, 1.0) # Normal
+	is_highlighted = enable
+	queue_redraw()

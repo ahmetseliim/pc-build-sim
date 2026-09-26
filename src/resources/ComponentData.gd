@@ -12,3 +12,5 @@ extends Resource
 @export var icon: Texture2D
 @export var description: String = ""
 @export var is_cable: bool = false
+@export var bg_color: Color = Color(0.2, 0.2, 0.2, 1.0)
+@export var icon_text: String = ""

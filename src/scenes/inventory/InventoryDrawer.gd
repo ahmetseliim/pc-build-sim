@@ -18,6 +18,7 @@ func _ready() -> void:
 	position.y = drawer_closed_y
 	drawer_handle.pressed.connect(_toggle_drawer)
 	EventBus.inventory_updated.connect(_refresh_items)
+	_refresh_items()
 
 func _toggle_drawer() -> void:
 	is_open = !is_open
@@ -34,8 +35,8 @@ func _refresh_items() -> void:
 	for part: Resource in InventoryManager.available_parts:
 		var slot_scene: PackedScene = preload("res://src/scenes/inventory/InventorySlot.tscn")
 		var slot: Control = slot_scene.instantiate()
-		slot.setup(part as ComponentData)
 		item_grid.add_child(slot)
+		slot.setup(part as ComponentData)
 
 func open_drawer() -> void:
 	if not is_open:
