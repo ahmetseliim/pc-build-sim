@@ -28,10 +28,25 @@ func _ready() -> void:
 	EventBus.build_complete.connect(_on_build_complete)
 	pressed.connect(_on_pressed)
 
-func _on_build_complete() -> void:
+	# Tamir senaryolarında arıza teşhisi için baştan basılabilir
+	var scenario: ScenarioData = GameManager.current_scenario
+	if scenario and scenario.early_boot:
+		_reveal()
+	if GameManager.build_complete:
+		_on_build_complete.call_deferred()
+
+func _reveal() -> void:
 	modulate.a = 1.0
 	disabled = false
 	mouse_filter = Control.MOUSE_FILTER_STOP
+
+var _pulsing: bool = false
+
+func _on_build_complete() -> void:
+	_reveal()
+	if _pulsing:
+		return
+	_pulsing = true
 	pivot_offset = size / 2.0
 	var tween: Tween = create_tween().set_loops()
 	tween.tween_property(self, "scale", Vector2(1.04, 1.04), 0.75).set_trans(Tween.TRANS_SINE)

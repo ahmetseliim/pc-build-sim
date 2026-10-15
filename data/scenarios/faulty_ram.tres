@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="ScenarioData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/resources/ScenarioData.gd" id="1_scenario"]
+
+[resource]
+script = ExtResource("1_scenario")
+title = "Bip Sesi ve Arızalı RAM"
+shop_stage = 1
+customer = "Kemal Usta"
+complaint = "Bilgisayar açılıyor gibi oluyor ama ekrana görüntü gelmiyor, kasadan da bip bip ses geliyor. Dün de birkaç kere mavi ekran verip kendini kapatmıştı."
+menu_description = "Bilgisayar bip sesi veriyor ve görüntü yok. Arızalı RAM'i BIOS'tan bul, değiştir."
+hint = "İpucu: BIOS hangi RAM yuvasının arızalı olduğunu söyler. RAM'i sökmek için yuvanın iki ucundaki mandallara tıkla; RAM yerinden kalkınca basılı tutup envantere taşı. Sonra \"YENİ\" etiketli RAM'i boş yuvaya sürükle."
+preinstalled_parts = Array[String](["cpu", "paste", "fan", "ram", "ram", "m2", "sata", "gpu", "psu", "atx24", "eps8", "pcie8", "satapwr", "satadata"])
+inventory_parts = Array[String](["ram"])
+broken_cables = Array[String]([])
+random_broken_cable = false
+spare_for_broken = false
+old_paste = false
+faulty_part = "ram"
+removable_parts = Array[String](["ram"])
+early_boot = true

@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="ScenarioData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/resources/ScenarioData.gd" id="1_scenario"]
+
+[resource]
+script = ExtResource("1_scenario")
+title = "Sıfırdan Montaj"
+shop_stage = 2
+customer = "Zeynep Hanım"
+complaint = "Parçaları aldım ama toplamaya vaktim yok. Hepsini takıp kablolarını bağlayıp çalışır halde teslim edebilir misin?"
+menu_description = "Tüm parçaları anakarta tak, macun sür, fanı vidala ve kabloları bağla."
+preinstalled_parts = Array[String]([])
+inventory_parts = Array[String](["cpu", "paste", "fan", "ram", "ram", "m2", "sata", "atx24", "eps8", "pcie8", "satapwr", "satadata", "gpu", "psu"])
+broken_cables = Array[String]([])
+random_broken_cable = false
+spare_for_broken = true
+early_boot = false

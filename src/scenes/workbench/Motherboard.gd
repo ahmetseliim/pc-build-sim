@@ -2,8 +2,9 @@ class_name Motherboard
 extends Control
 
 # Anakart yöneticisi
-# Anakartı çizer, bırakılan parçaları ve kabloları ilgili yuvaya yerleştirir
-# ve montaj sırası kurallarını uygular.
+# Anakartı çizer, senaryoya göre hazır parçaları yerleştirir, bırakılan parçaları
+# ve kabloları ilgili yuvaya takar, bozuk kabloların sökülmesini yönetir ve
+# montaj sırası kurallarını uygular.
 
 const BOARD_SIZE: Vector2 = Vector2(960, 540)
 const BORDER: float = 3.0
@@ -20,6 +21,7 @@ const ScrewMechanicScene: PackedScene = preload("res://src/scenes/minigames/Scre
 var slots: Array[MotherboardSlot] = []
 
 @onready var cpu_socket: CpuSocket = $Slots/CPU_Socket
+@onready var fan_slot: MotherboardSlot = $Slots/Fan_Slot
 @onready var gpu_slot: MotherboardSlot = $Slots/GPU_Slot
 @onready var sata_slot: MotherboardSlot = $Slots/SATA_Slot
 @onready var psu_slot: MotherboardSlot = $Slots/PSU_Slot
@@ -42,6 +44,16 @@ func _ready() -> void:
 	# EventBus bağlantıları
 	EventBus.part_drag_started.connect(_on_part_drag_started)
 	EventBus.part_dropped.connect(_on_part_dropped)
+	EventBus.part_unplug_requested.connect(_on_part_unplug_requested)
+	EventBus.part_extract_requested.connect(_on_part_extract_requested)
+	EventBus.part_locked_touched.connect(_on_part_locked_touched)
+	for slot: MotherboardSlot in slots:
+		if slot.accepted_type == "ram":
+			slot.latch_toggled.connect(_on_latch_toggled)
+	EventBus.fan_mounted.connect(_check_complete)
+	EventBus.fan_unmounted.connect(_on_fan_unmounted)
+
+	_preinstall_scenario_parts()
 
 # Verilen global noktadaki görünür yuvayı döndürür
 func get_slot_at(global_point: Vector2) -> MotherboardSlot:
@@ -59,6 +71,92 @@ func get_cable_origin(port_id: String) -> Dictionary:
 		return {"point": psu_slot.position + port["pos"], "dir": port["dir"]}
 	return {}
 
+# --- Senaryo: hazır gelen bilgisayar -----------------------------------------
+
+func _preinstall_scenario_parts() -> void:
+	var scenario: ScenarioData = GameManager.current_scenario
+	if scenario == null or scenario.preinstalled_parts.is_empty():
+		return
+	var types: Array[String] = scenario.preinstalled_parts
+	var cables: Array[ComponentData] = []
+
+	# Önce parçalar
+	for type: String in types:
+		if type == "paste":
+			continue
+		var data: ComponentData = InventoryManager.create_part(type)
+		if data.is_cable:
+			cables.append(data)
+			continue
+		var slot: MotherboardSlot = _free_slot_for(type)
+		if slot == null:
+			continue
+		var part: PartItem = _new_part(data)
+		if type == "cpu":
+			slot.install(part, false)
+			GameManager.set_cpu_state("locked_full")
+			if "paste" in types:
+				cpu_socket.apply_paste_instant(scenario.old_paste)
+		else:
+			slot.install(part, false)
+			_after_install(part, true)
+
+	# Arızalı parça: bu türden takılı olanlardan biri rastgele seçilir (görünüşte sağlam)
+	if scenario.faulty_part != "":
+		var candidates: Array[PartItem] = _placed_parts_of(scenario.faulty_part)
+		if not candidates.is_empty():
+			var faulty: PartItem = candidates.pick_random()
+			faulty.is_broken = true
+			faulty.refresh_interaction()
+			GameManager.broken_parts.append(scenario.faulty_part)
+			GameManager.faulty_slot_label = (faulty.get_parent() as MotherboardSlot).slot_label
+	for type: String in scenario.removable_parts:
+		for part: PartItem in _placed_parts_of(type):
+			part.is_removable = true
+			part.refresh_interaction()
+		for slot: MotherboardSlot in slots:
+			if slot.accepted_type == type:
+				slot.latches_interactive = true
+
+	# Sonra kablolar (PSU ve cihazlar takılı olmalı)
+	for data: ComponentData in cables:
+		var slot: MotherboardSlot = _free_slot_for(data.part_type)
+		var origin: Dictionary = get_cable_origin(data.cable_from)
+		if slot == null or origin.is_empty():
+			continue
+		var part: PartItem = _new_part(data)
+		part.is_broken = data.part_type in GameManager.scenario_broken
+		slot.install(part, false)
+		if part.is_broken:
+			GameManager.broken_parts.append(data.part_type)
+		cable_layer.add_cable(part, origin["point"], origin["dir"], Rect2(slot.position, slot.size), part.is_broken, false)
+
+	_check_complete()
+
+func _new_part(data: ComponentData) -> PartItem:
+	var part: PartItem = PartItem.new()
+	part.setup(data)
+	return part
+
+# Bu türden yuvalara takılı parçalar
+func _placed_parts_of(type: String) -> Array[PartItem]:
+	var result: Array[PartItem] = []
+	for slot: MotherboardSlot in slots:
+		if slot.accepted_type != type or not slot.is_occupied:
+			continue
+		for child: Node in slot.get_children():
+			if child is PartItem:
+				result.append(child)
+	return result
+
+func _free_slot_for(type: String) -> MotherboardSlot:
+	for slot: MotherboardSlot in slots:
+		if slot.accepted_type == type and not slot.is_occupied:
+			return slot
+	return null
+
+# --- Sürükle bırak -----------------------------------------------------------
+
 func _on_part_drag_started(part_node: Control) -> void:
 	var part: PartItem = part_node as PartItem
 	var type: String = part.data.part_type
@@ -67,6 +165,8 @@ func _on_part_drag_started(part_node: Control) -> void:
 		slot.hint = slot.is_visible_in_tree() and not slot.is_occupied and slot.accepted_type == type
 	if type == "paste":
 		cpu_socket.hint = GameManager.cpu_state == "locked_full"
+	elif type == "cloth":
+		cpu_socket.hint = GameManager.cpu_state == "paste_old"
 	# Kablo tutulduysa kaynağından itibaren çiz
 	if part.data.is_cable:
 		var origin: Dictionary = get_cable_origin(part.data.cable_from)
@@ -90,10 +190,24 @@ func _on_part_dropped(part_node: Control, global_point: Vector2) -> void:
 	if type == "paste":
 		if slot != cpu_socket:
 			_reject(part)
+		elif GameManager.paste_old:
+			_reject(part, "Önce fanı söküp eski macunu alkollü bezle temizlemelisin!")
 		elif GameManager.cpu_state != "locked_full":
 			_reject(part, "Önce işlemciyi takıp kilitlemelisin!")
 		else:
 			cpu_socket.start_paste(part)
+		return
+
+	# Alkollü bez: işlemcideki kurumuş macunu temizleme mini oyunu
+	if type == "cloth":
+		if slot != cpu_socket:
+			_reject(part)
+		elif not GameManager.paste_old:
+			_reject(part, "Temizlenecek eski macun yok.")
+		elif GameManager.fan_mounted:
+			_reject(part, "Önce fanı sök (vidalarına basılı tut)!")
+		else:
+			cpu_socket.start_cleaning(part)
 		return
 
 	if slot == null or slot.accepted_type != type or slot.is_occupied:
@@ -111,20 +225,74 @@ func _on_part_dropped(part_node: Control, global_point: Vector2) -> void:
 				_reject(part, "İşlemciye termal macun sürmeden fanı takamazsın!")
 				return
 
+	var scenario: ScenarioData = GameManager.current_scenario
+	part.is_removable = scenario != null and type in scenario.removable_parts
 	slot.install(part)
+	# Arızalı parça geri takıldıysa yine arızalı sayılır
+	if part.is_broken:
+		GameManager.broken_parts.append(type)
+		GameManager.faulty_slot_label = slot.slot_label
+	_after_install(part, false)
+	_check_complete()
 
-	match type:
+# Takılı parça (RAM) yuvasından tutulup çekildi: mandallar açılır, parça eline gelir
+func _on_part_extract_requested(part_node: Control) -> void:
+	var part: PartItem = part_node as PartItem
+	var slot: MotherboardSlot = part.get_parent() as MotherboardSlot
+	if slot == null:
+		return
+	slot.uninstall()
+	if part.is_broken:
+		GameManager.broken_parts.erase(part.data.part_type)
+	# Elde taşınma hissi
+	part.pivot_offset = part.size / 2.0
+	create_tween().tween_property(part, "scale", Vector2(1.1, 1.1), 0.12).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	_check_complete()
+
+# Mandallar kapalıyken parça tutulmaya çalışıldı: mandalları göster
+func _on_part_locked_touched(part_node: Control) -> void:
+	var slot: MotherboardSlot = part_node.get_parent() as MotherboardSlot
+	if slot:
+		slot.flash_latches()
+	EventBus.warning_requested.emit("Önce RAM yuvasının iki ucundaki mandalları aç (mandallara tıkla)!")
+
+# Mandal açıldı/kapandı: ikisi de açıksa RAM yuvasından "klik" diye kalkar, biri kapanırsa geri oturur
+func _on_latch_toggled(slot: MotherboardSlot) -> void:
+	var parts: Array[PartItem] = []
+	for child: Node in slot.get_children():
+		if child is PartItem:
+			parts.append(child)
+	if parts.is_empty() or not parts[0].is_removable:
+		return
+	var part: PartItem = parts[0]
+	part.pivot_offset = part.size / 2.0
+	if slot.latches_open() and not part.is_loose:
+		part.is_loose = true
+		var pop: Tween = create_tween().set_parallel(true)
+		pop.tween_property(part, "position:y", -8.0, 0.16).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		pop.tween_property(part, "scale", Vector2(1.05, 1.05), 0.16).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	elif not slot.latches_open() and part.is_loose:
+		part.is_loose = false
+		var seat: Tween = create_tween().set_parallel(true)
+		seat.tween_property(part, "position:y", 0.0, 0.12)
+		seat.tween_property(part, "scale", Vector2.ONE, 0.12)
+	part.refresh_interaction()
+
+# Parça takıldıktan sonraki ek işler (fan vidaları, cihaz konnektörleri)
+func _after_install(part: PartItem, prelocked: bool) -> void:
+	match part.data.part_type:
 		"fan":
-			GameManager.set_cpu_state("screwing_fan")
+			if not prelocked:
+				GameManager.set_cpu_state("screwing_fan")
 			var screws: ScrewMechanic = ScrewMechanicScene.instantiate()
 			part.add_child(screws)
 			screws.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-			screws.start()
+			screws.start(prelocked)
 		"gpu":
-			_reveal(gpu_power)
+			_reveal(gpu_power, not prelocked)
 		"sata":
-			_reveal(sata_power)
-			_reveal(sata_data)
+			_reveal(sata_power, not prelocked)
+			_reveal(sata_data, not prelocked)
 
 func _drop_cable(part: PartItem, global_point: Vector2) -> void:
 	# Anakart dışına bırakıldıysa sessizce envantere dön
@@ -147,26 +315,108 @@ func _drop_cable(part: PartItem, global_point: Vector2) -> void:
 
 	var target: MotherboardSlot = null
 	for slot: MotherboardSlot in slots:
-		if slot.accepted_type == part.data.part_type and slot.is_visible_in_tree() and not slot.is_occupied \
+		if slot.accepted_type == part.data.part_type and slot.is_visible_in_tree() \
 				and slot.get_global_rect().grow(CABLE_SNAP).has_point(global_point):
 			target = slot
 			break
 	if target == null:
 		_reject(part)
 		return
+	if target.is_occupied:
+		if part.data.part_type in GameManager.broken_parts:
+			_reject(part, "Önce bozuk kabloyu sök (fişine tıkla)!")
+		else:
+			_reject(part)
+		return
 
 	target.install(part)
 	cable_layer.add_cable(part, origin["point"], origin["dir"], Rect2(target.position, target.size))
+	_check_complete()
 
-func _reveal(slot: MotherboardSlot) -> void:
+# Bozuk kablonun fişine tıklandı: kabloyu sök ve at
+func _on_part_unplug_requested(part_node: Control) -> void:
+	var part: PartItem = part_node as PartItem
+	var slot: MotherboardSlot = part.get_parent() as MotherboardSlot
+	if slot == null:
+		return
+	# Animasyon sürerken tekrar tıklanmasın
+	part.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	part.mouse_default_cursor_shape = Control.CURSOR_ARROW
+	slot.uninstall()
+	GameManager.broken_parts.erase(part.data.part_type)
+	_check_complete()
+	await _animate_cable_removal(part, slot)
+	EventBus.info_requested.emit("Bozuk kablo söküldü ve atıldı. Envanterden yenisini tak.")
+	part.queue_free()
+
+# Kablo söküm animasyonu: fiş kilidinden kurtulana kadar sallanır, "pop" diye çıkar,
+# ardından kablo güç kaynağına doğru toplanarak kaybolur.
+func _animate_cable_removal(part: PartItem, slot: MotherboardSlot) -> void:
+	var origin: Dictionary = get_cable_origin(part.data.cable_from)
+	var dir: Vector2 = part.data.cable_entry
+	cable_layer.follow_part(part)
+	_lift_to_drag_layer(part)
+	var start: Vector2 = part.global_position
+
+	var pull: Tween = create_tween()
+	for i: int in range(3):
+		pull.tween_property(part, "global_position", start + dir * 3.0, 0.05)
+		pull.tween_property(part, "global_position", start - dir * 1.0, 0.05)
+	pull.tween_callback(cable_layer.pop_at.bind(slot.position + slot.size / 2.0, part.data.cable_color))
+	pull.tween_property(part, "global_position", start + dir * 34.0, 0.18).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	pull.tween_interval(0.15)
+	await pull.finished
+
+	if not origin.is_empty():
+		var target: Vector2 = cable_layer.global_position + origin["point"] - part.size / 2.0
+		var reel: Tween = create_tween().set_parallel(true)
+		reel.tween_property(part, "global_position", target, 0.45).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+		reel.tween_property(part, "scale", Vector2(0.4, 0.4), 0.45).set_ease(Tween.EASE_IN)
+		reel.tween_property(part, "modulate:a", 0.0, 0.15).set_delay(0.3)
+		await reel.finished
+	cable_layer.remove_cable(part)
+
+func _lift_to_drag_layer(part: PartItem) -> void:
+	var layer: Node = get_tree().get_first_node_in_group("drag_layer")
+	if layer:
+		part.reparent(layer)
+	part.pivot_offset = part.size / 2.0
+
+# Fanın dört vidası söküldü: fanı yuvadan çıkarıp envantere geri koy
+func _on_fan_unmounted() -> void:
+	for child: Node in fan_slot.get_children():
+		if child is PartItem:
+			var fan: PartItem = child as PartItem
+			fan_slot.uninstall()
+			var screws: Node = fan.get_node_or_null("ScrewMechanic")
+			if screws:
+				screws.queue_free()
+			fan.unplace()
+			EventBus.part_return_requested.emit(fan)
+			break
+	EventBus.info_requested.emit("Fan söküldü. Şimdi eski macunu temizle.")
+	_check_complete()
+
+# Tüm yuvalar dolu, fan vidalı, macun yeni ve bozuk kablo yoksa bilgisayar hazırdır
+func _check_complete() -> void:
+	var done: bool = GameManager.fan_mounted and not GameManager.paste_old and GameManager.broken_parts.is_empty()
+	for slot: MotherboardSlot in slots:
+		if not slot.is_occupied:
+			done = false
+	GameManager.mark_complete(done)
+
+func _reveal(slot: MotherboardSlot, animate: bool) -> void:
 	slot.visible = true
-	slot.modulate.a = 0.0
-	create_tween().tween_property(slot, "modulate:a", 1.0, 0.3)
+	if animate:
+		slot.modulate.a = 0.0
+		create_tween().tween_property(slot, "modulate:a", 1.0, 0.3)
 
 func _reject(part: PartItem, message: String = "") -> void:
 	if message != "":
 		EventBus.warning_requested.emit(message)
 	EventBus.part_return_requested.emit(part)
+
+# --- Çizim -------------------------------------------------------------------
 
 func _draw() -> void:
 	var rect: Rect2 = Rect2(Vector2.ZERO, size)

@@ -25,6 +25,8 @@ static func draw(ci: CanvasItem, d: ComponentData, r: Rect2, placed: bool, angle
 			_draw_cpu(ci, r)
 		"paste":
 			_draw_paste(ci, r)
+		"cloth":
+			_draw_cloth(ci, r)
 		"fan":
 			_draw_fan(ci, r, angle)
 		"ram":
@@ -74,6 +76,20 @@ static func _draw_paste(ci: CanvasItem, r: Rect2) -> void:
 	_box(ci, Rect2(o + Vector2(50, y - 6), Vector2(4, 12)), Color("#cbd5e1"), 1)
 	_text(ci, Vector2(r.get_center().x, r.end.y - 8), "Macun", 8, Color.WHITE)
 
+static func _draw_cloth(ci: CanvasItem, r: Rect2) -> void:
+	_shadowed_box(ci, r, Color("#334155"), 6, 1, Color("#64748b"))
+	var o: Vector2 = r.position
+	# Katlanmış bez
+	var cloth: Rect2 = Rect2(o + Vector2(6, 6), Vector2(28, 18))
+	_box(ci, cloth, Color("#e0f2fe"), 3, 1, Color("#7dd3fc"))
+	ci.draw_line(o + Vector2(8, 12), o + Vector2(32, 12), Color("#7dd3fc"), 1.0, true)
+	ci.draw_line(o + Vector2(8, 18), o + Vector2(32, 18), Color("#7dd3fc"), 1.0, true)
+	# Alkol şişesi
+	_box(ci, Rect2(o + Vector2(40, 9), Vector2(12, 16)), Color("#38bdf8"), 2)
+	ci.draw_rect(Rect2(o + Vector2(43, 5), Vector2(6, 4)), Color("#f8fafc"))
+	ci.draw_rect(Rect2(o + Vector2(42, 14), Vector2(8, 5)), Color("#f8fafc"))
+	_text(ci, Vector2(r.get_center().x, r.end.y - 8), "Alkollü Bez", 8, Color.WHITE)
+
 static func _draw_fan(ci: CanvasItem, r: Rect2, angle: float) -> void:
 	_shadowed_box(ci, r, Color("#1e293b"), 8, 2, Color("#334155"))
 	var c: Vector2 = r.get_center()
@@ -104,7 +120,11 @@ static func _draw_ram(ci: CanvasItem, d: ComponentData, r: Rect2) -> void:
 		ci.draw_line(Vector2(x, contacts.position.y), Vector2(x, contacts.end.y), Color(0, 0, 0, 0.3), 1.0)
 		x += 3.0
 	ci.draw_rect(Rect2(o + Vector2(w * 0.4, h - 12), Vector2(3, 9)), Color("#1e293b"))
-	_vtext(ci, o + Vector2(w / 2.0, h * 0.62), "DDR5 · " + d.part_name, 8, Color("#e2e8f0"))
+	_vtext(ci, o + Vector2(w / 2.0, h * 0.62), "DDR5 · 16GB", 8, Color("#e2e8f0"))
+	if d.is_new:
+		var badge: Rect2 = Rect2(o + Vector2(4, h - 27), Vector2(w - 8, 12))
+		_box(ci, badge, Color("#16a34a"), 2)
+		_text(ci, badge.get_center(), "YENİ", 7, Color.WHITE)
 
 static func _draw_m2(ci: CanvasItem, r: Rect2) -> void:
 	_shadowed_box(ci, r, Color("#166534"), 3)

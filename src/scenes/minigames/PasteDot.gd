@@ -10,9 +10,28 @@ const LIGHT_RING: Color = Color(248.0 / 255.0, 250.0 / 255.0, 252.0 / 255.0, 0.4
 const DARK_RING: Color = Color(148.0 / 255.0, 163.0 / 255.0, 184.0 / 255.0, 0.3)
 const INSET_SHADOW: Color = Color(100.0 / 255.0, 116.0 / 255.0, 139.0 / 255.0, 0.6)
 
+const DRIED_COLOR: Color = Color("#8f8574")
+const CRACK_COLOR: Color = Color("#4a443b")
+# Kurumuş macun çatlakları (0-1 aralığında göreli noktalar)
+const CRACKS: Array = [
+	[Vector2(0.5, 0.5), Vector2(0.38, 0.32), Vector2(0.3, 0.12)],
+	[Vector2(0.5, 0.5), Vector2(0.7, 0.42), Vector2(0.9, 0.36)],
+	[Vector2(0.5, 0.5), Vector2(0.56, 0.72), Vector2(0.48, 0.9)],
+	[Vector2(0.38, 0.32), Vector2(0.14, 0.4)],
+	[Vector2(0.7, 0.42), Vector2(0.76, 0.18)],
+	[Vector2(0.56, 0.72), Vector2(0.82, 0.8)],
+	[Vector2(0.2, 0.62), Vector2(0.36, 0.7), Vector2(0.3, 0.86)],
+]
+
 var ratio: float = 0.0:
 	set(value):
 		ratio = value
+		queue_redraw()
+
+## Kurumuş eski macun mu?
+var dried: bool = false:
+	set(value):
+		dried = value
 		queue_redraw()
 
 func _ready() -> void:
@@ -20,6 +39,7 @@ func _ready() -> void:
 	modulate.a = 0.0
 
 func apply() -> void:
+	dried = false
 	var tween: Tween = create_tween().set_parallel(true)
 	tween.tween_property(self, "ratio", FINAL_RATIO, 0.6).set_trans(Tween.TRANS_QUART).set_ease(Tween.EASE_OUT)
 	tween.tween_property(self, "modulate:a", 1.0, 0.4).set_ease(Tween.EASE_OUT)
@@ -30,6 +50,14 @@ func _draw() -> void:
 	var s: Vector2 = size * ratio
 	var rect: Rect2 = Rect2((size - s) / 2.0, s)
 	var radius: float = minf(8.0, minf(s.x, s.y) / 2.0)
+	if dried:
+		UIStyle.box(DRIED_COLOR, radius, 0, Color.TRANSPARENT, Color(0, 0, 0, 0.3), 2, Vector2(0, 2)).draw(get_canvas_item(), rect)
+		for crack: Array in CRACKS:
+			var pts: PackedVector2Array = PackedVector2Array()
+			for p: Vector2 in crack:
+				pts.append(rect.position + p * rect.size)
+			draw_polyline(pts, CRACK_COLOR, 1.5, true)
+		return
 	UIStyle.box(BASE_COLOR, radius, 0, Color.TRANSPARENT, Color(0, 0, 0, 0.3), 2, Vector2(0, 2)).draw(get_canvas_item(), rect)
 	# Macunun yayılma izleri (köşelerden halkalar)
 	_draw_rings(rect, rect.position, 17.0, 18.0, LIGHT_RING)

@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="ScenarioData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/resources/ScenarioData.gd" id="1_scenario"]
+
+[resource]
+script = ExtResource("1_scenario")
+title = "Termal Macun Yenileme"
+shop_stage = 1
+customer = "Elif Hanım"
+complaint = "Bilgisayarım son zamanlarda çok ısınıyor, fanı da sürekli bağırıyor. Termal macunu yenileyebilir misin?"
+menu_description = "Fanı sök, kurumuş macunu alkollü bezle temizle, yeni macun sür ve fanı geri vidala."
+hint = "İpucu: Fanı sökmek için vidalarına basılı tut. Sonra alkollü bezi işlemcinin üstüne sürükleyip ovalayarak eski macunu temizle."
+preinstalled_parts = Array[String](["cpu", "paste", "fan", "ram", "ram", "m2", "sata", "gpu", "psu", "atx24", "eps8", "pcie8", "satapwr", "satadata"])
+inventory_parts = Array[String](["cloth", "paste"])
+broken_cables = Array[String]([])
+random_broken_cable = false
+spare_for_broken = false
+old_paste = true
+early_boot = true

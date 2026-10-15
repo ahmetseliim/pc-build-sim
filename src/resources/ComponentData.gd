@@ -14,6 +14,7 @@ extends Resource
 @export var is_cable: bool = false
 @export var bg_color: Color = Color(0.2, 0.2, 0.2, 1.0)
 @export var icon_text: String = ""
+@export var is_new: bool = false ## Tamir dükkânında yedek olarak verilen yeni parça ("YENİ" etiketi)
 
 @export_group("Görünüm")
 @export var part_size: Vector2 = Vector2(100, 100) ## Envanterdeki boyut (px)

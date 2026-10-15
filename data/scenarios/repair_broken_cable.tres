@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="ScenarioData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/resources/ScenarioData.gd" id="1_scenario"]
+
+[resource]
+script = ExtResource("1_scenario")
+title = "Arızalı Kablo"
+shop_stage = 1
+customer = "Mert Bey"
+complaint = ""
+menu_description = "Hazır bir bilgisayar geldi ama bir kablosu bozuk. Arızayı bul, kabloyu değiştir."
+hint = "İpucu: Arızayı bulmak için önce \"Bilgisayarı Başlat\"a bas ve BIOS'taki hata mesajını oku. Bozuk kabloyu fişine tıklayarak sökebilirsin."
+preinstalled_parts = Array[String](["cpu", "paste", "fan", "ram", "ram", "m2", "sata", "gpu", "psu", "atx24", "eps8", "pcie8", "satapwr", "satadata"])
+inventory_parts = Array[String]([])
+broken_cables = Array[String]([])
+random_broken_cable = true
+spare_for_broken = true
+early_boot = true

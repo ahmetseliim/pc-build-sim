@@ -8,7 +8,36 @@ extends RefCounted
 const UI_FONT_NAMES: Array = ["Segoe UI", "Tahoma", "Geneva", "Verdana", "Roboto", "Noto Sans", "sans-serif"]
 const MONO_FONT_NAMES: Array = ["Courier New", "Courier", "Liberation Mono", "monospace"]
 
+const BASE_SIZE: Vector2 = Vector2(1080, 1000) ## project.godot'taki tasarım çözünürlüğü
+const WOOD_LIGHT: Color = Color("#6d4c41")
+const WOOD_DARK: Color = Color("#5d4037")
+
 static var _fonts: Dictionary = {}
+static var _window_ready: bool = false
+
+# Varsayılan yazı tipini ayarlar ve masaüstünde pencereyi ekrana sığdırır (bir kez)
+static func setup_window(window: Window) -> void:
+	if _window_ready:
+		return
+	_window_ready = true
+	var theme_res: Theme = Theme.new()
+	theme_res.default_font = ui_font(false)
+	window.get_tree().root.theme = theme_res
+	if not OS.has_feature("pc") or window.mode != Window.MODE_WINDOWED:
+		return
+	var usable: Rect2i = DisplayServer.screen_get_usable_rect(window.current_screen)
+	var scale_factor: float = minf(1.0, minf(usable.size.x * 0.95 / BASE_SIZE.x, usable.size.y * 0.9 / BASE_SIZE.y))
+	var win_size: Vector2i = Vector2i(BASE_SIZE * scale_factor)
+	window.size = win_size
+	window.position = usable.position + (usable.size - win_size) / 2
+
+# Ahşap masa arka planı: 20 px'lik dikey şeritler
+static func draw_wood(ci: CanvasItem, rect: Rect2) -> void:
+	ci.draw_rect(rect, WOOD_LIGHT)
+	var x: float = rect.position.x + 20.0
+	while x < rect.end.x:
+		ci.draw_rect(Rect2(x, rect.position.y, 20.0, rect.size.y), WOOD_DARK)
+		x += 40.0
 
 # Arayüz yazı tipi (HTML'deki 'Segoe UI' yığını). spacing: harf aralığı (px)
 static func ui_font(bold: bool = true, spacing: int = 0) -> Font:

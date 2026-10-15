@@ -37,6 +37,7 @@ func _ready() -> void:
 	paste_app.coverage_changed.connect(_on_coverage_changed)
 	paste_app.paste_complete.connect(_on_paste_complete)
 	paste_app.paste_spilled.connect(_on_paste_spilled)
+	paste_app.clean_complete.connect(_on_clean_complete)
 	clear_button.pressed.connect(_on_clear_pressed)
 
 	_apply_state(GameManager.cpu_state, false)
@@ -56,7 +57,26 @@ func start_paste(part: PartItem) -> void:
 	part.visible = false
 	GameManager.set_cpu_state("painting")
 	inline_ui.visible = true
+	clear_button.visible = true
 	paste_app.start()
+
+# Alkollü bez soketin üstüne bırakıldığında kurumuş macunu silme mini oyununu başlatır
+func start_cleaning(part: PartItem) -> void:
+	_paste_part = part
+	part.visible = false
+	paste_dot.ratio = 0.0
+	GameManager.set_cpu_state("cleaning")
+	inline_ui.visible = true
+	clear_button.visible = false
+	paste_app.start_cleaning()
+
+# Hazır gelen bilgisayarda macun zaten sürülmüştür (dried: kurumuş eski macun)
+func apply_paste_instant(dried: bool = false) -> void:
+	paste_dot.dried = dried
+	paste_dot.ratio = PasteDot.FINAL_RATIO
+	paste_dot.modulate.a = 1.0
+	GameManager.paste_old = dried
+	GameManager.set_cpu_state("paste_applied")
 
 func _on_cpu_state_changed(state: String) -> void:
 	_apply_state(state, true)
@@ -79,8 +99,22 @@ func _apply_state(state: String, animate: bool) -> void:
 			], animate)
 		"painting":
 			_show_paint_prompt()
-		"paste_applied":
-			overlay.set_content(Color(16.0 / 255.0, 185.0 / 255.0, 129.0 / 255.0, 0.3), [{"text": "✅ MACUNLANDI", "icon": true}], animate)
+		"cleaning":
+			overlay.set_content(Color(0, 0, 0, 0.45), [{"text": "OVALAYARAK"}, {"text": "TEMİZLE"}], false)
+		"paste_old":
+			_show_dried_prompt(animate)
+		"paste_applied", "fan_mounted":
+			if GameManager.paste_old:
+				_show_dried_prompt(animate)
+			elif state == "paste_applied":
+				overlay.set_content(Color(16.0 / 255.0, 185.0 / 255.0, 129.0 / 255.0, 0.3), [{"text": "✅ MACUNLANDI", "icon": true}], animate)
+
+func _show_dried_prompt(animate: bool) -> void:
+	var tip: String = "(Fanı sök)" if GameManager.fan_mounted else "(Alkollü bezle temizle)"
+	overlay.set_content(Color(0.45, 0.33, 0.15, 0.55), [
+		{"text": "⚠️ KURUMUŞ MACUN"},
+		{"text": tip, "size": 9, "color": Color("#fcd34d")},
+	], animate)
 
 func _set_border(color: Color, animate: bool) -> void:
 	if _border_tween:
@@ -95,7 +129,7 @@ func _show_paint_prompt() -> void:
 	overlay.set_content(Color(0, 0, 0, 0.6), [{"text": "MACUN SÜR"}], false)
 
 func _on_coverage_changed(percent: int) -> void:
-	coverage_label.text = "Kapsama: %d%%" % percent
+	coverage_label.text = ("Temizlik: %d%%" if paste_app.cleaning else "Kapsama: %d%%") % percent
 
 func _on_paste_spilled() -> void:
 	overlay.set_content(Color(0.937, 0.267, 0.267, 0.8), [{"text": "⚠️ TAŞTI!"}], true)
@@ -117,6 +151,19 @@ func _on_paste_complete(_coverage: float) -> void:
 		InventoryManager.remove_part(_paste_part.data)
 		_paste_part.queue_free()
 		_paste_part = null
+
+func _on_clean_complete() -> void:
+	paste_app.stop()
+	paste_app.visible = false
+	inline_ui.visible = false
+	paste_dot.dried = false
+	GameManager.paste_old = false
+	GameManager.set_cpu_state("locked_full")
+	if _paste_part:
+		InventoryManager.remove_part(_paste_part.data)
+		_paste_part.queue_free()
+		_paste_part = null
+	EventBus.info_requested.emit("Eski macun temizlendi. Şimdi yeni macun sür.")
 
 func _draw() -> void:
 	super._draw()

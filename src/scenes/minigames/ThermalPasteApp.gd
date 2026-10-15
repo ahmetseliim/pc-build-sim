@@ -8,6 +8,9 @@ extends Control
 signal paste_complete(coverage: float)
 signal paste_spilled()
 signal coverage_changed(percent: int)
+signal clean_complete() ## Temizleme modunda kurumuş macun silindi
+
+@export var clean_target_percent: float = 95.0 ## Temizlikte silinmesi gereken oran
 
 @export var min_coverage_percent: float = 85.0 ## Minimum kapsama yüzdesi
 @export var brush_radius: float = 10.0 ## Fırça boyutu
@@ -16,7 +19,10 @@ signal coverage_changed(percent: int)
 const PASTE_COLOR: Color = Color("#94a3b8")
 const PASTE_SHADOW: Color = Color(100.0 / 255.0, 116.0 / 255.0, 139.0 / 255.0, 0.45)
 const SPILL_MARGIN: float = 2.0
+const DRIED_COLOR: Color = Color("#8f8574")
 
+var cleaning: bool = false ## true: bezle eski macunu silme modu
+var _dirty_total: int = 0
 var paste_points: Array[Vector2] = []
 var is_active: bool = false
 var is_painting: bool = false
@@ -35,7 +41,23 @@ func _ready() -> void:
 	grid_rows = int(size.y / cell_size)
 	_reset_grid()
 
+# Temizleme modu: ortadaki kurumuş macunu ovalayarak sil
+func start_cleaning() -> void:
+	start()
+	cleaning = true
+	_dirty_total = 0
+	var margin: float = size.x * 0.075 # Macun alanın %85'ini kaplar
+	for c: int in range(grid_cols):
+		for r: int in range(grid_rows):
+			var center: Vector2 = Vector2(c + 0.5, r + 0.5) * cell_size
+			var dirty: bool = center.x > margin and center.x < size.x - margin and center.y > margin and center.y < size.y - margin
+			coverage_grid[c][r] = dirty
+			if dirty:
+				_dirty_total += 1
+	queue_redraw()
+
 func start() -> void:
+	cleaning = false
 	visible = true
 	is_active = true
 	is_painting = false
@@ -70,12 +92,18 @@ func _gui_input(event: InputEvent) -> void:
 			if has_spilled:
 				return
 			is_painting = true
-			_paint(mb.position)
+			if cleaning:
+				_scrub(mb.position)
+			else:
+				_paint(mb.position)
 		else:
 			is_painting = false
 	elif event is InputEventMouseMotion and is_painting and not has_spilled:
 		var pos: Vector2 = (event as InputEventMouseMotion).position
-		# Taşma kontrolü (2 px tolerans)
+		# Taşma kontrolü (2 px tolerans); temizlerken taşma olmaz
+		if cleaning:
+			_scrub(pos)
+			return
 		if pos.x < -SPILL_MARGIN or pos.x > size.x + SPILL_MARGIN or pos.y < -SPILL_MARGIN or pos.y > size.y + SPILL_MARGIN:
 			_trigger_spill()
 			return
@@ -110,6 +138,30 @@ func _paint(pos: Vector2) -> void:
 	if coverage >= min_coverage_percent:
 		_complete()
 
+# Bezle ovalama: fırçanın altındaki kurumuş macun hücrelerini sil
+func _scrub(pos: Vector2) -> void:
+	var radius: float = brush_radius * 1.4
+	var min_col: int = maxi(0, int(floor((pos.x - radius) / cell_size)))
+	var max_col: int = mini(grid_cols - 1, int(floor((pos.x + radius) / cell_size)))
+	var min_row: int = maxi(0, int(floor((pos.y - radius) / cell_size)))
+	var max_row: int = mini(grid_rows - 1, int(floor((pos.y + radius) / cell_size)))
+	for c: int in range(min_col, max_col + 1):
+		for r: int in range(min_row, max_row + 1):
+			if pos.distance_to(Vector2(c + 0.5, r + 0.5) * cell_size) <= radius:
+				coverage_grid[c][r] = false
+	var remaining: int = 0
+	for c: int in range(grid_cols):
+		for r: int in range(grid_rows):
+			if coverage_grid[c][r]:
+				remaining += 1
+	var cleaned: float = 100.0 * (1.0 - float(remaining) / float(maxi(_dirty_total, 1)))
+	coverage_changed.emit(int(cleaned))
+	queue_redraw()
+	if cleaned >= clean_target_percent:
+		is_active = false
+		is_painting = false
+		clean_complete.emit()
+
 func _trigger_spill() -> void:
 	has_spilled = true
 	is_painting = false
@@ -123,6 +175,14 @@ func _complete() -> void:
 	EventBus.paste_applied.emit()
 
 func _draw() -> void:
+	if cleaning:
+		# Kalan kurumuş macun hücreleri (hafif desenli)
+		for c: int in range(grid_cols):
+			for r: int in range(grid_rows):
+				if coverage_grid[c][r]:
+					var shade: float = float((c * 7 + r * 13) % 5) * 0.04
+					draw_rect(Rect2(Vector2(c, r) * cell_size, Vector2.ONE * cell_size), DRIED_COLOR.darkened(shade))
+		return
 	# Her fırça darbesi hafif gölgeli bir daire (HTML canvas shadowBlur karşılığı)
 	for point: Vector2 in paste_points:
 		draw_circle(point, brush_radius + 2.0, PASTE_SHADOW)
