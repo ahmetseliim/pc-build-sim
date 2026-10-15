@@ -3,7 +3,13 @@
 [ext_resource type="Script" path="res://src/scenes/workbench/Workbench.gd" id="1_wb"]
 [ext_resource type="PackedScene" path="res://src/scenes/workbench/Motherboard.tscn" id="2_mb"]
 
-[node name="Workbench" type="Node2D"]
+[node name="Workbench" type="Control"]
+custom_minimum_size = Vector2(960, 540)
+layout_mode = 3
+anchors_preset = 0
+offset_right = 960.0
+offset_bottom = 540.0
+mouse_filter = 2
 script = ExtResource("1_wb")
 
 [node name="Motherboard" parent="." instance=ExtResource("2_mb")]

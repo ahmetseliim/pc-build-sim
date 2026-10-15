@@ -1,0 +1,63 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://src/scenes/workbench/CpuSocket.gd" id="1_cpu"]
+[ext_resource type="Script" path="res://src/scenes/minigames/PasteDot.gd" id="2_dot"]
+[ext_resource type="PackedScene" path="res://src/scenes/minigames/ThermalPasteApp.tscn" id="3_paste"]
+[ext_resource type="Script" path="res://src/scenes/workbench/SlotOverlay.gd" id="4_overlay"]
+
+[node name="CpuSocket" type="Control"]
+layout_mode = 3
+anchors_preset = 0
+offset_right = 115.0
+offset_bottom = 115.0
+script = ExtResource("1_cpu")
+slot_id = "cpu_socket"
+accepted_type = "cpu"
+border_color = Color(0.937, 0.267, 0.267, 1)
+dashed = false
+
+[node name="PasteDot" type="Control" parent="."]
+anchors_preset = 0
+offset_left = 2.0
+offset_top = 2.0
+offset_right = 113.0
+offset_bottom = 113.0
+mouse_filter = 2
+script = ExtResource("2_dot")
+
+[node name="ThermalPasteApp" parent="." instance=ExtResource("3_paste")]
+offset_left = 2.0
+offset_top = 2.0
+offset_right = 117.0
+offset_bottom = 117.0
+
+[node name="Overlay" type="Control" parent="."]
+anchors_preset = 0
+offset_left = 2.0
+offset_top = 2.0
+offset_right = 113.0
+offset_bottom = 113.0
+mouse_filter = 2
+script = ExtResource("4_overlay")
+
+[node name="PasteInlineUI" type="PanelContainer" parent="."]
+anchors_preset = 0
+offset_left = 2.0
+offset_top = -33.0
+offset_right = 117.0
+offset_bottom = 7.0
+
+[node name="VBox" type="VBoxContainer" parent="PasteInlineUI"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 3
+
+[node name="CoverageLabel" type="Label" parent="PasteInlineUI/VBox"]
+layout_mode = 2
+text = "Kapsama: 0%"
+horizontal_alignment = 1
+
+[node name="ClearButton" type="Button" parent="PasteInlineUI/VBox"]
+layout_mode = 2
+size_flags_horizontal = 4
+text = "TEMİZLE"

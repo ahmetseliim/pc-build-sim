@@ -24,6 +24,8 @@ Proje dizin yapısı ve açıklamaları:
 - `src/scenes/inventory/` — Envanter çekmecesi
 - `src/scenes/minigames/` — Mini oyunlar (termal macun, vida sıkma, BIOS boot)
 - `src/scenes/ui/` — HUD, menüler ve kullanıcı arayüzü
+- `src/utils/` — Ortak yardımcılar (`UIStyle`: yazı tipleri ve CSS benzeri çizim; `PartArt`: parça ve kablo fişi çizimleri, PSU port konumları)
+- `src/scenes/workbench/CableLayer.gd` — Takılı ve sürüklenen kabloları (Bezier eğrisi) çizer
 - `assets/` — Sprite, font, ses ve tema dosyaları
 - `data/components/` — Parçaların oluşturulmuş `.tres` dosyaları
 
@@ -41,18 +43,21 @@ Oyunun temel döngüsü aşağıdaki adımlardan oluşur:
 1. Mandal aç → CPU tak → Kilitle
 2. Termal macun sür (canvas boyama mini oyunu)
 3. CPU Fanı tak + 4 vida sık (vida sıkma mini oyunu)
-4. RAM, M.2, GPU, PSU kablosu, CMOS pili gibi diğer parçaları yerleştir
-5. Tüm parçalar tamamlandığında → BIOS boot ekranına geçiş yap
+4. RAM, M.2, SATA SSD, ekran kartı ve güç kaynağını yerleştir (envanter boyutu = yuva boyutu, 1:1)
+5. Kabloları bağla: fiş envanterden sürüklenir, kablo PSU portundan (SATA veri: anakart SATA portundan) uzar.
+   24-pin ATX, CPU 8-pin (EPS), PCIe 8-pin (GPU takılınca), SATA güç ve SATA veri (SSD takılınca)
+6. 8 parça + 5 kablo tamamlandığında → BIOS boot ekranına geçiş yap
 
 ## Mevcut Durum
 - [x] Proje yapısı oluşturuldu
 - [x] Autoload singleton'lar yazıldı
 - [x] Resource data katmanı tanımlandı
-- [ ] Sahneler ve scriptler geliştiriliyor
-- [ ] Sprite'lar oluşturuluyor
-- [ ] Mini oyunlar implemente ediliyor
+- [x] Sahneler ve scriptler (HTML prototipindeki görünüm ve oynanış birebir taşındı)
+- [ ] Sprite'lar oluşturuluyor (şu an tüm görseller `_draw()` ile çiziliyor)
+- [x] Mini oyunlar (termal macun, vida sıkma, BIOS boot)
 
 ## Değişiklik Günlüğü
 | Tarih | Geliştirici | Değişiklik |
 |-------|-------------|------------|
 | 2026-09-27 | Muhammed | Proje Godot 4'e taşındı. Temel yapı oluşturuldu. |
+| 2026-10-14 | Ahmet Selim | `index.html` prototipinin tasarımı ve oynanışı Godot'a birebir taşındı (mandal, macun, vida, kablolar, CMOS, uyarılar). |

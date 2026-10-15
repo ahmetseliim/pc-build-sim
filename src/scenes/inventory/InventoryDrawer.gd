@@ -1,47 +1,30 @@
 class_name InventoryDrawer
-extends Control
+extends PanelContainer
 
-# Envanter çekmecesi
-# Ekranın altından yukarı doğru açılır.
-# Parçaları sürükleyip anakart slotlarına bırakmayı sağlar.
+# Envanter paneli (HTML sürümündeki .inventory-container)
+# Parçaları listeler; anakarta oturmayan parçalar sona geri döner.
 
-@export var drawer_open_y: float = 600.0 ## Açık konumu (Y)
-@export var drawer_closed_y: float = 1700.0 ## Kapalı konumu (Y)
-@export var animation_duration: float = 0.4 ## Açılıp kapanma süresi
-
-var is_open: bool = false
-
-@onready var item_grid: GridContainer = $Panel/ScrollContainer/ItemGrid
-@onready var drawer_handle: Button = $DrawerHandle
+@onready var title_label: Label = $VBox/Title
+@onready var items: HFlowContainer = $VBox/Items
 
 func _ready() -> void:
-	position.y = drawer_closed_y
-	drawer_handle.pressed.connect(_toggle_drawer)
-	EventBus.inventory_updated.connect(_refresh_items)
-	_refresh_items()
+	var panel: StyleBoxFlat = UIStyle.box(Color("#2b170e"), 12, 2, Color("#3d2314"), Color(0, 0, 0, 0.4), 10, Vector2(0, 8))
+	panel.content_margin_left = 25
+	panel.content_margin_right = 25
+	panel.content_margin_top = 15
+	panel.content_margin_bottom = 20
+	add_theme_stylebox_override("panel", panel)
 
-func _toggle_drawer() -> void:
-	is_open = !is_open
-	var target_y: float = drawer_open_y if is_open else drawer_closed_y
-	var tween: Tween = create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	tween.tween_property(self, "position:y", target_y, animation_duration)
+	title_label.add_theme_font_override("font", UIStyle.ui_font(true))
+	title_label.add_theme_font_size_override("font_size", 12)
+	title_label.add_theme_color_override("font_color", Color("#e2b083"))
 
-func _refresh_items() -> void:
-	# Envanter güncellendiğinde öğeleri yeniden yükle
-	for child in item_grid.get_children():
-		child.queue_free()
-	
-	# InventoryManager'dan parçaları al ve slotlara yerleştir
+	EventBus.part_return_requested.connect(_on_part_return_requested)
+
 	for part: Resource in InventoryManager.available_parts:
-		var slot_scene: PackedScene = preload("res://src/scenes/inventory/InventorySlot.tscn")
-		var slot: Control = slot_scene.instantiate()
-		item_grid.add_child(slot)
-		slot.setup(part as ComponentData)
+		var item: PartItem = PartItem.new()
+		item.setup(part as ComponentData)
+		items.add_child(item)
 
-func open_drawer() -> void:
-	if not is_open:
-		_toggle_drawer()
-
-func close_drawer() -> void:
-	if is_open:
-		_toggle_drawer()
+func _on_part_return_requested(part: Control) -> void:
+	(part as PartItem).return_to(items)

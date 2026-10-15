@@ -1,10 +1,10 @@
 class_name Workbench
-extends Node2D
+extends Control
 
 # Montaj masası sahnesi
 # Anakart ve tüm slotları yönetir.
 
-@onready var motherboard: Node2D = $Motherboard
+@onready var motherboard: Motherboard = $Motherboard
 
 func _ready() -> void:
 	print("Montaj masası hazır.")

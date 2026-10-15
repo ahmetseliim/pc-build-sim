@@ -2,35 +2,36 @@ class_name HUD
 extends CanvasLayer
 
 # Oyun içi arayüz katmanı
-# Skor, durum bilgisi ve başlat butonu içerir.
+# Oyuncuya kısa uyarı mesajları gösterir (HTML'deki alert yerine).
 
-@onready var status_label: Label = $MarginContainer/VBoxContainer/StatusLabel
-@onready var start_button: Button = $MarginContainer/VBoxContainer/StartButton
+const TOAST_DURATION: float = 2.2
+
+@onready var toast: PanelContainer = $Toast
+@onready var toast_label: Label = $Toast/Label
+
+var _tween: Tween = null
 
 func _ready() -> void:
-	start_button.visible = false
-	start_button.pressed.connect(_on_start_pressed)
-	EventBus.build_complete.connect(_on_build_complete)
-	EventBus.part_installed.connect(_on_part_installed)
-	_update_status()
+	var panel: StyleBoxFlat = UIStyle.box(Color(0.06, 0.09, 0.16, 0.96), 8, 2, Color("#ef4444"), Color(0, 0, 0, 0.5), 10, Vector2(0, 6))
+	panel.content_margin_left = 22
+	panel.content_margin_right = 22
+	panel.content_margin_top = 14
+	panel.content_margin_bottom = 14
+	toast.add_theme_stylebox_override("panel", panel)
+	toast_label.add_theme_font_override("font", UIStyle.ui_font(true))
+	toast_label.add_theme_font_size_override("font_size", 15)
+	toast_label.add_theme_color_override("font_color", Color.WHITE)
+	toast.visible = false
+	EventBus.warning_requested.connect(show_warning)
 
-func _update_status() -> void:
-	var placed: int = GameManager.placed_parts.size()
-	var total: int = GameManager.total_required_parts
-	status_label.text = "Parçalar: %d / %d" % [placed, total]
-
-func _on_part_installed(_slot_id: String, _part_data: Resource) -> void:
-	_update_status()
-
-func _on_build_complete() -> void:
-	status_label.text = "✅ TÜM PARÇALAR YERLEŞTİRİLDİ!"
-	start_button.visible = true
-	# Buton animasyonu
-	var tween: Tween = create_tween().set_loops()
-	tween.tween_property(start_button, "scale", Vector2(1.05, 1.05), 0.75)
-	tween.tween_property(start_button, "scale", Vector2(1.0, 1.0), 0.75)
-
-func _on_start_pressed() -> void:
-	print("⚡ Bilgisayar başlatılıyor...")
-	# BIOS boot ekranına geçiş sinyali gönder
-	EventBus.bios_boot_started.emit()
+func show_warning(message: String) -> void:
+	toast_label.text = "⚠️  " + message
+	toast.visible = true
+	toast.modulate.a = 0.0
+	if _tween:
+		_tween.kill()
+	_tween = create_tween()
+	_tween.tween_property(toast, "modulate:a", 1.0, 0.15)
+	_tween.tween_interval(TOAST_DURATION)
+	_tween.tween_property(toast, "modulate:a", 0.0, 0.3)
+	_tween.tween_callback(toast.hide)

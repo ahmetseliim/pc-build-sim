@@ -9,15 +9,17 @@ extends Control
 @onready var boot_timer: Timer = $BootTimer
 
 var boot_sequence: Array[String] = [
-	"BIOS DATE: 09/27/2026 15:15:00 VER: 2.10.128",
-	"Power Signal (PWR_SW): OK",
+	"BIOS DATE: 09/11/2026 15:15:00 VER: 2.10.128",
+	"PSU: 750W 80+ Gold ... OK",
+	"CPU Power (EPS 8-Pin): CONNECTED",
 	"CPU: Intel Core / AMD Ryzen Detected @ 4.80GHz",
 	"Thermal Interface Material: APPLIED (TDP Normal)",
 	"CPU_FAN Speed: 1520 RPM ... OPTIMAL",
 	"Memory: 32768MB OK (DDR5 Dual Channel)",
 	"Storage: M.2 NVMe Primary SSD OK",
+	"Storage: SATA SSD Secondary OK",
 	"PCIe Slot 1: Discrete GPU Initialized",
-	"CMOS Battery: 3.28V Normal",
+	"GPU Power (PCIe 8-Pin): CONNECTED",
 	"ATX 24-Pin Rail: 12V / 5V / 3.3V STABLE",
 	"Booting into OS...",
 	"",
@@ -29,6 +31,9 @@ var is_running: bool = false
 
 func _ready() -> void:
 	visible = false
+	bios_text.add_theme_font_override("normal_font", UIStyle.mono_font())
+	bios_text.add_theme_font_size_override("normal_font_size", 16)
+	EventBus.bios_boot_requested.connect(start_boot)
 	boot_timer.wait_time = 0.28
 	boot_timer.one_shot = false
 	boot_timer.timeout.connect(_print_next_line)

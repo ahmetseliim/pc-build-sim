@@ -2,5 +2,9 @@
 
 [ext_resource type="Script" path="res://src/scenes/minigames/ThermalPasteApp.gd" id="1_paste"]
 
-[node name="ThermalPasteApp" type="Node2D"]
+[node name="ThermalPasteApp" type="Control"]
+layout_mode = 3
+anchors_preset = 0
+offset_right = 115.0
+offset_bottom = 115.0
 script = ExtResource("1_paste")

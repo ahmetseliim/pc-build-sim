@@ -1,18 +1,58 @@
-[gd_scene load_steps=6 format=3 uid="uid://dgjihn7ofd0kh"]
+[gd_scene load_steps=7 format=3 uid="uid://dgjihn7ofd0kh"]
 
 [ext_resource type="Script" path="res://src/scenes/main/Main.gd" id="1_main"]
 [ext_resource type="PackedScene" path="res://src/scenes/workbench/Workbench.tscn" id="2_wb"]
 [ext_resource type="PackedScene" path="res://src/scenes/inventory/InventoryDrawer.tscn" id="3_inv"]
 [ext_resource type="PackedScene" path="res://src/scenes/minigames/BiosPostTest.tscn" id="4_bios"]
 [ext_resource type="PackedScene" path="res://src/scenes/ui/HUD.tscn" id="5_hud"]
+[ext_resource type="Script" path="res://src/scenes/ui/StartButton.gd" id="6_start"]
 
-[node name="Main" type="Node2D"]
+[node name="Main" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
 script = ExtResource("1_main")
 
-[node name="Workbench" parent="." instance=ExtResource("2_wb")]
+[node name="Content" type="VBoxContainer" parent="."]
+layout_mode = 0
+offset_left = 60.0
+offset_top = 20.0
+offset_right = 1020.0
+offset_bottom = 970.0
+mouse_filter = 2
+theme_override_constants/separation = 20
 
-[node name="InventoryDrawer" parent="." instance=ExtResource("3_inv")]
+[node name="Workbench" parent="Content" instance=ExtResource("2_wb")]
+layout_mode = 2
 
-[node name="BiosPostTest" parent="." instance=ExtResource("4_bios")]
+[node name="InventoryDrawer" parent="Content" instance=ExtResource("3_inv")]
+layout_mode = 2
+
+[node name="StartRow" type="CenterContainer" parent="Content"]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="StartButton" type="Button" parent="Content/StartRow"]
+layout_mode = 2
+text = "⚡ BİLGİSAYARI BAŞLAT"
+script = ExtResource("6_start")
+
+[node name="DragLayer" type="Control" parent="." groups=["drag_layer"]]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
 
 [node name="HUD" parent="." instance=ExtResource("5_hud")]
+
+[node name="BiosLayer" type="CanvasLayer" parent="."]
+layer = 20
+
+[node name="BiosPostTest" parent="BiosLayer" instance=ExtResource("4_bios")]

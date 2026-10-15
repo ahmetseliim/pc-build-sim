@@ -1,52 +1,44 @@
 extends Node
 
 # Envanter Yöneticisi (InventoryManager)
-# Kullanıcının sahip olduğu bilgisayar parçalarını yönetir.
+# Kullanıcının sahip olduğu bilgisayar parçalarını ve kabloları yönetir.
 
 var available_parts: Array[Resource] = []
 
 func _ready() -> void:
-	var cpu = preload("res://src/resources/CPUData.gd").new()
-	cpu.part_name = "Intel Core i5"
-	cpu.part_type = "cpu"
-	cpu.bg_color = Color("#9ca3af")
-	cpu.icon_text = "⏹️"
-	add_part(cpu)
-	
-	var ram = preload("res://src/resources/ComponentData.gd").new()
-	ram.part_name = "Corsair 16GB"
-	ram.part_type = "ram"
-	ram.bg_color = Color("#0ea5e9")
-	ram.icon_text = "📊"
-	add_part(ram)
-	
-	var gpu = preload("res://src/resources/GPUData.gd").new()
-	gpu.part_name = "RTX 4060"
-	gpu.part_type = "gpu"
-	gpu.bg_color = Color("#9333ea")
-	gpu.icon_text = "🎮"
-	add_part(gpu)
-	
-	var m2 = preload("res://src/resources/ComponentData.gd").new()
-	m2.part_name = "Samsung 1TB"
-	m2.part_type = "m2"
-	m2.bg_color = Color("#f59e0b")
-	m2.icon_text = "💾"
-	add_part(m2)
-	
-	var cmos = preload("res://src/resources/ComponentData.gd").new()
-	cmos.part_name = "CR2032 Pil"
-	cmos.part_type = "cmos"
-	cmos.bg_color = Color("#f8fafc")
-	cmos.icon_text = "🪙"
-	add_part(cmos)
-	
-	var power = preload("res://src/resources/ComponentData.gd").new()
-	power.part_name = "24-PIN Güç"
-	power.part_type = "power"
-	power.bg_color = Color("#334155")
-	power.icon_text = "🔌"
-	add_part(power)
+	# Parçalar (envanterdeki boyut = anakarttaki yuva boyutu)
+	add_part(_create(CPUData.new(), "cpu", "İşlemci", Vector2(115, 115)))
+	add_part(_create(ComponentData.new(), "paste", "Termal Macun", Vector2(60, 40)))
+	add_part(_create(ComponentData.new(), "fan", "CPU Fanı", Vector2(115, 115)))
+	add_part(_create(ComponentData.new(), "ram", "RAM 1", Vector2(42, 130)))
+	add_part(_create(ComponentData.new(), "ram", "RAM 2", Vector2(42, 130)))
+	add_part(_create(ComponentData.new(), "m2", "M.2 SSD", Vector2(140, 38)))
+	add_part(_create(ComponentData.new(), "sata", "SATA SSD", Vector2(140, 95)))
+
+	# Kablolar (fiş boyutu = konnektör boyutu)
+	add_part(_cable("atx24", "24-PIN", Vector2(28, 84), "#f59e0b", 9.0, "psu_atx", Vector2.DOWN))
+	add_part(_cable("eps8", "CPU 8-PIN", Vector2(48, 24), "#22d3ee", 6.0, "psu_eps", Vector2.RIGHT))
+	add_part(_cable("pcie8", "PCIe 8-PIN", Vector2(48, 24), "#a855f7", 6.0, "psu_pcie", Vector2.RIGHT))
+	add_part(_cable("satapwr", "SATA GÜÇ", Vector2(20, 44), "#34d399", 4.5, "psu_sata", Vector2.RIGHT))
+	add_part(_cable("satadata", "SATA VERİ", Vector2(20, 30), "#ef4444", 3.5, "mb_sata", Vector2.RIGHT))
+
+	add_part(_create(GPUData.new(), "gpu", "Ekran Kartı", Vector2(480, 52)))
+	add_part(_create(ComponentData.new(), "psu", "Güç Kaynağı", Vector2(200, 110)))
+
+func _create(part: ComponentData, type: String, display_name: String, part_size: Vector2) -> ComponentData:
+	part.part_type = type
+	part.part_name = display_name
+	part.part_size = part_size
+	return part
+
+func _cable(type: String, display_name: String, part_size: Vector2, color: String, width: float, from: String, entry: Vector2) -> ComponentData:
+	var cable: ComponentData = _create(ComponentData.new(), type, display_name, part_size)
+	cable.is_cable = true
+	cable.cable_color = Color(color)
+	cable.cable_width = width
+	cable.cable_from = from
+	cable.cable_entry = entry
+	return cable
 
 # Parça ekler
 func add_part(part: Resource) -> void:
