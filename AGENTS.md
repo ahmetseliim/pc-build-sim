@@ -52,6 +52,9 @@ Oyun iki aşamalıdır:
     DIMM'in bozuk olduğunu ve bip sesini yazar. RAM'i sökmek için yuvanın iki ucundaki mandallara tıklanır (gerçekteki gibi);
     ikisi de açılınca RAM yuvasından kalkar, basılı tutularak envantere/başka yuvaya taşınır. Mandallar kapalıyken RAM kilitlidir.
     Tamir dükkânında envanterdeki yedek parçalar "YENİ" etiketlidir (`ComponentData.is_new`).
+  - *Ölü SSD* (`faulty_part: "m2"`): Windows açılmaz, BIOS "M.2 NOT RESPONDING / Reboot and Select proper Boot device" yazar.
+    Sökülebilir M.2 ucundaki tek vidayla sabitlenir (`ScrewMechanic.mode = "m2"`): vidaya basılı tutup sök → SSD açılı
+    kalkar → envantere taşı → YENİ SSD'yi tak ve vidasını sık (`GameManager.m2_secured`).
 - **2. Dükkân (Montaj):** Sıfırdan montaj (`full_build.tres`), aşağıdaki döngü. Bu hâl `tam-montaj-v1` etiketiyle de kayıtlı.
 
 Montaj döngüsü:

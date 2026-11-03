@@ -92,6 +92,7 @@ func _preinstall_scenario_parts() -> void:
 		if slot == null:
 			continue
 		var part: PartItem = _new_part(data)
+		part.is_removable = type in scenario.removable_parts
 		if type == "cpu":
 			slot.install(part, false)
 			GameManager.set_cpu_state("locked_full")
@@ -252,9 +253,31 @@ func _on_part_extract_requested(part_node: Control) -> void:
 # Mandallar kapalıyken parça tutulmaya çalışıldı: mandalları göster
 func _on_part_locked_touched(part_node: Control) -> void:
 	var slot: MotherboardSlot = part_node.get_parent() as MotherboardSlot
-	if slot:
+	if slot and slot.accepted_type == "ram":
 		slot.flash_latches()
-	EventBus.warning_requested.emit("Önce RAM yuvasının iki ucundaki mandalları aç (mandallara tıkla)!")
+		EventBus.warning_requested.emit("Önce RAM yuvasının iki ucundaki mandalları aç (mandallara tıkla)!")
+	elif slot and slot.accepted_type == "m2":
+		EventBus.warning_requested.emit("Önce SSD'yi sabitleyen vidayı sök (vidaya basılı tut)!")
+
+# M.2 vidası sıkıldı: SSD sabitlendi
+func _on_m2_secured() -> void:
+	GameManager.m2_secured = true
+	_check_complete()
+
+# M.2 vidası söküldü: SSD yaylanarak açılı biçimde yukarı kalkar, artık tutup çekilebilir
+func _on_m2_unscrewed(part: PartItem) -> void:
+	GameManager.m2_secured = false
+	var screws: Node = part.get_node_or_null("ScrewMechanic")
+	if screws:
+		screws.queue_free()
+	part.is_loose = true
+	part.pivot_offset = Vector2(0, part.size.y / 2.0) # Altın uç tarafında menteşe gibi
+	var pop: Tween = create_tween().set_parallel(true)
+	pop.tween_property(part, "rotation", -0.12, 0.2).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	pop.tween_property(part, "scale", Vector2(1.05, 1.05), 0.2).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	part.refresh_interaction()
+	EventBus.info_requested.emit("Vida söküldü. SSD'yi tutup envantere taşı.")
+	_check_complete()
 
 # Mandal açıldı/kapandı: ikisi de açıksa RAM yuvasından "klik" diye kalkar, biri kapanırsa geri oturur
 func _on_latch_toggled(slot: MotherboardSlot) -> void:
@@ -288,6 +311,18 @@ func _after_install(part: PartItem, prelocked: bool) -> void:
 			part.add_child(screws)
 			screws.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 			screws.start(prelocked)
+		"m2":
+			# Sökülebilir M.2: ucundaki tek vidayla sabitlenir
+			if part.is_removable:
+				GameManager.m2_secured = false
+				var m2_screw: ScrewMechanic = ScrewMechanicScene.instantiate()
+				m2_screw.mode = "m2"
+				m2_screw.unscrew_allowed = true
+				part.add_child(m2_screw)
+				m2_screw.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+				m2_screw.all_screws_done.connect(_on_m2_secured)
+				m2_screw.all_screws_removed.connect(_on_m2_unscrewed.bind(part))
+				m2_screw.start(prelocked)
 		"gpu":
 			_reveal(gpu_power, not prelocked)
 		"sata":
@@ -399,7 +434,8 @@ func _on_fan_unmounted() -> void:
 
 # Tüm yuvalar dolu, fan vidalı, macun yeni ve bozuk kablo yoksa bilgisayar hazırdır
 func _check_complete() -> void:
-	var done: bool = GameManager.fan_mounted and not GameManager.paste_old and GameManager.broken_parts.is_empty()
+	var done: bool = GameManager.fan_mounted and not GameManager.paste_old and GameManager.m2_secured \
+		and GameManager.broken_parts.is_empty()
 	for slot: MotherboardSlot in slots:
 		if not slot.is_occupied:
 			done = false

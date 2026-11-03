@@ -42,6 +42,11 @@ static func draw(ci: CanvasItem, d: ComponentData, r: Rect2, placed: bool, angle
 		_:
 			_shadowed_box(ci, r, d.bg_color, d.corner_radius)
 			_text(ci, r.get_center(), d.part_name, d.font_size, d.text_color)
+	# Yedek parça etiketi (RAM kendi çiziminde gösterir)
+	if d.is_new and d.part_type != "ram":
+		var badge: Rect2 = Rect2(r.position + Vector2(r.size.x / 2.0 - 15.0, r.size.y - 12.0), Vector2(30, 10))
+		_box(ci, badge, Color("#16a34a"), 2)
+		_text(ci, badge.get_center(), "YENİ", 7, Color.WHITE)
 
 # Kablonun fişten çıktığı kenarın orta noktası
 static func entry_point(r: Rect2, dir: Vector2) -> Vector2:

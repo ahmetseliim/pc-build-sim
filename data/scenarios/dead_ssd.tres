@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="ScenarioData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/resources/ScenarioData.gd" id="1_scenario"]
+
+[resource]
+script = ExtResource("1_scenario")
+title = "Windows Açılmıyor (Ölü SSD)"
+shop_stage = 1
+customer = "Selin Hanım"
+complaint = "Bilgisayar açılıyor, fanlar dönüyor ama Windows gelmiyor. Ekranda 'Reboot and select proper boot device' yazıyor. Son günlerde dosyaları açarken sürekli takılıyordu."
+menu_description = "Sistem diski ölmüş, Windows açılmıyor. M.2 SSD'nin vidasını sök, yenisiyle değiştir."
+hint = "İpucu: BIOS'ta hangi diskin cevap vermediğine bak. M.2 SSD'yi sabitleyen küçük vidaya basılı tutarak sök; SSD yerinden kalkınca tutup envantere taşı. Sonra \"YENİ\" SSD'yi yuvaya tak ve vidasını sık."
+preinstalled_parts = Array[String](["cpu", "paste", "fan", "ram", "ram", "m2", "sata", "gpu", "psu", "atx24", "eps8", "pcie8", "satapwr", "satadata"])
+inventory_parts = Array[String](["m2"])
+broken_cables = Array[String]([])
+random_broken_cable = false
+spare_for_broken = false
+old_paste = false
+faulty_part = "m2"
+removable_parts = Array[String](["m2"])
+early_boot = true

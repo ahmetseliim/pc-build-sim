@@ -12,6 +12,7 @@ const SCENARIOS: Array[String] = [
 	"res://data/scenarios/repair_broken_cable.tres",
 	"res://data/scenarios/thermal_paste_renewal.tres",
 	"res://data/scenarios/faulty_ram.tres",
+	"res://data/scenarios/dead_ssd.tres",
 	"res://data/scenarios/full_build.tres",
 ]
 
@@ -34,6 +35,7 @@ var broken_parts: Array[String] = [] ## Şu an takılı olan bozuk kablo/parça 
 var faulty_slot_label: String = "" ## Arızalı parçanın takılı olduğu yuva (BIOS mesajı için)
 var fan_mounted: bool = false
 var paste_old: bool = false ## İşlemcideki macun kurumuş (temizlenip yenilenmeli)
+var m2_secured: bool = true ## M.2 SSD vidasıyla sabitlendi mi (vidalı senaryolarda)
 var build_complete: bool = false
 
 func _ready() -> void:
@@ -97,6 +99,7 @@ func reset_build() -> void:
 	faulty_slot_label = ""
 	fan_mounted = false
 	paste_old = false
+	m2_secured = true
 	build_complete = false
 
 func mark_complete(done: bool) -> void:

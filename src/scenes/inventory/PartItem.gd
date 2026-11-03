@@ -120,7 +120,8 @@ func refresh_interaction() -> void:
 	if is_removable and not data.is_cable:
 		mouse_filter = Control.MOUSE_FILTER_STOP
 		mouse_default_cursor_shape = Control.CURSOR_DRAG if is_loose else Control.CURSOR_ARROW
-		tooltip_text = "Tutup envantere sürükle" if is_loose else "Sökmek için önce mandalları aç"
+		var how: String = "mandalları aç" if data.part_type == "ram" else "vidasını sök"
+		tooltip_text = "Tutup envantere sürükle" if is_loose else "Sökmek için önce %s" % how
 	elif is_broken:
 		mouse_filter = Control.MOUSE_FILTER_STOP
 		mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
@@ -145,6 +146,7 @@ func unplace() -> void:
 func place_into(slot: Control, rect: Rect2, animate: bool = true) -> void:
 	is_placed = true
 	is_loose = false
+	rotation = 0.0
 	refresh_interaction()
 	custom_minimum_size = Vector2.ZERO
 	if get_parent():

@@ -88,7 +88,13 @@ func _build_sequence() -> void:
 		_fail("*** BEEP — BEEP — BEEP (No Memory) ***")
 		_halt()
 		return
-	_ok("Storage: M.2 NVMe Primary SSD OK")
+	var boot_drive_ok: bool = GameManager.is_working("m2") and GameManager.m2_secured
+	if boot_drive_ok:
+		_ok("Storage: M.2 NVMe Primary SSD OK")
+	elif "m2" in GameManager.broken_parts:
+		_fail("Storage: M.2 NVMe — NOT RESPONDING (S.M.A.R.T. FAILURE)")
+	else:
+		_fail("Storage: M.2 NVMe — NOT DETECTED")
 	if GameManager.is_working("sata") and GameManager.is_working("satapwr") and GameManager.is_working("satadata"):
 		_ok("Storage: SATA SSD (6 Gb/s) OK")
 	else:
@@ -99,6 +105,10 @@ func _build_sequence() -> void:
 	else:
 		_fail("GPU Power (PCIe 8-Pin): NOT DETECTED")
 		_fail("PCIe Slot 1: GPU NOT RESPONDING")
+	if not boot_drive_ok:
+		_ok("")
+		_fail("Reboot and Select proper Boot device")
+		_fail("or Insert Boot Media in selected Boot device and press a key")
 	if not boot_ok:
 		_halt()
 		return
@@ -148,9 +158,16 @@ func _print_next_line() -> void:
 
 func _gui_input(event: InputEvent) -> void:
 	var mb: InputEventMouseButton = event as InputEventMouseButton
-	if not (mb and mb.button_index == MOUSE_BUTTON_LEFT and mb.pressed) or not can_close:
+	if not (mb and mb.button_index == MOUSE_BUTTON_LEFT and mb.pressed):
 		return
 	accept_event()
+	# Yazılırken tıklanırsa kalan satırları hemen göster
+	if is_running:
+		while is_running:
+			_print_next_line()
+		return
+	if not can_close:
+		return
 	if boot_ok:
 		GameManager.go_to_menu()
 	else:

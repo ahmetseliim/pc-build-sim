@@ -2,13 +2,17 @@ class_name ScrewMechanic
 extends Control
 
 # Vida sıkma mini oyunu
-# CPU fanını 4 vida ile sabitleme.
+# "fan" modu: CPU fanını köşelerdeki 4 vida ile sabitleme.
+# "m2" modu: M.2 SSD'yi ucundaki tek vida ile sabitleme.
 # Oyuncu her vidaya basılı tutarak sıkar; bırakınca ilerleme korunur.
 
 signal all_screws_done()
+signal all_screws_removed()
 
 @export var screw_speed: float = 75.0 ## Saniyede ilerleme yüzdesi (HTML: 20 ms'de %1,5)
 @export var required_screws: int = 4 ## Gereken vida sayısı
+@export var mode: String = "fan" ## fan veya m2
+@export var unscrew_allowed: bool = false ## (m2 modu) Sıkılı vida sökülebilir mi
 
 const SCREW_SIZE: float = 24.0
 const SCREW_MARGIN: float = 8.0
@@ -19,18 +23,28 @@ var screw_nodes: Array[Node] = []
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 
-# Vidaları fanın köşelerine yerleştirir (boyut ayarlandıktan sonra çağrılmalı).
+# Sıkılı vida sökülebilir mi? Fan yalnızca macun yenilenecekse sökülür.
+func can_unscrew() -> bool:
+	return GameManager.paste_old if mode == "fan" else unscrew_allowed
+
+# Vidaları yerleştirir (boyut ayarlandıktan sonra çağrılmalı).
 # prelocked: hazır gelen bilgisayarda vidalar zaten sıkılıdır.
 func start(prelocked: bool = false) -> void:
 	screws_locked = 0
-	var far: Vector2 = size - Vector2.ONE * (SCREW_SIZE + SCREW_MARGIN)
-	var positions: Array[Vector2] = [
-		Vector2(SCREW_MARGIN, SCREW_MARGIN), # Sol üst
-		Vector2(far.x, SCREW_MARGIN),        # Sağ üst
-		Vector2(SCREW_MARGIN, far.y),        # Sol alt
-		far,                                 # Sağ alt
-	]
-	for i: int in range(mini(required_screws, positions.size())):
+	var positions: Array[Vector2] = []
+	if mode == "m2":
+		# M.2'nin ucundaki vida yuvası (kartın kenarına oturur)
+		positions = [Vector2(size.x - SCREW_SIZE / 2.0, (size.y - SCREW_SIZE) / 2.0)]
+	else:
+		var far: Vector2 = size - Vector2.ONE * (SCREW_SIZE + SCREW_MARGIN)
+		positions = [
+			Vector2(SCREW_MARGIN, SCREW_MARGIN), # Sol üst
+			Vector2(far.x, SCREW_MARGIN),        # Sağ üst
+			Vector2(SCREW_MARGIN, far.y),        # Sol alt
+			far,                                 # Sağ alt
+		]
+	required_screws = mini(required_screws, positions.size())
+	for i: int in range(required_screws):
 		var screw: ScrewNode = ScrewNode.new()
 		screw.position = positions[i]
 		screw.size = Vector2.ONE * SCREW_SIZE
@@ -45,26 +59,29 @@ func start(prelocked: bool = false) -> void:
 		screw_nodes.append(screw)
 	if prelocked:
 		screws_locked = required_screws
-		all_screws_done.emit()
-		EventBus.all_screws_locked.emit()
-		EventBus.fan_mounted.emit()
+		_on_all_locked()
 
 func _on_screw_completed(screw_id: String) -> void:
 	screws_locked += 1
 	EventBus.screw_locked.emit(screw_id)
-
 	if screws_locked >= required_screws:
-		all_screws_done.emit()
+		_on_all_locked()
+
+func _on_all_locked() -> void:
+	all_screws_done.emit()
+	if mode == "fan":
 		EventBus.all_screws_locked.emit()
 		EventBus.fan_mounted.emit()
 
-# Vida söküldü; dördü de çıkınca fan sökülmüş olur
+# Vida söküldü; hepsi çıkınca parça serbest kalır
 func _on_screw_removed(_screw_id: String) -> void:
 	screws_locked -= 1
 	for screw: Node in screw_nodes:
 		if is_instance_valid(screw) and not (screw as ScrewNode).is_removed:
 			return
-	EventBus.fan_unmounted.emit()
+	all_screws_removed.emit()
+	if mode == "fan":
+		EventBus.fan_unmounted.emit()
 
 # İç sınıf: Tek bir vida
 class ScrewNode extends Control:
@@ -92,9 +109,9 @@ class ScrewNode extends Control:
 		if not is_locked or _can_unscrew():
 			mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 
-	# Sıkılı vida yalnızca macun yenilenecekse sökülebilir
+	# Sıkılı vida sökülebilir mi (karar vida grubunda)
 	func _can_unscrew() -> bool:
-		return GameManager.paste_old
+		return get_parent().call("can_unscrew")
 
 	func _gui_input(event: InputEvent) -> void:
 		if is_removed:
