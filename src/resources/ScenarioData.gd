@@ -7,16 +7,21 @@ extends Resource
 
 @export var title: String = ""
 @export var shop_stage: int = 1 ## 1: Tamir dükkânı, 2: Montaj dükkânı
+@export var price: int = 0 ## İşin ücreti (₺); hatalar bundan keser
 @export var customer: String = ""
 @export_multiline var complaint: String = "" ## Boşsa arızaya göre otomatik şikâyet yazılır
 @export_multiline var menu_description: String = ""
 @export_multiline var hint: String = "" ## İş emri kartında gösterilen ipucu
 
 @export_group("Bilgisayarın durumu")
+## Bu işte gelebilecek anakartlar (data/boards/*.tres); her seferinde biri rastgele seçilir. Boşsa modern kart.
+@export var board_paths: Array[String] = []
 ## Hazır takılı gelen parçalar ve kablolar. "paste": işlemciye macun sürülmüş demektir.
 @export var preinstalled_parts: Array[String] = []
 ## Envanterde verilen parçalar
 @export var inventory_parts: Array[String] = []
+## Tamir dükkânında envanterdekiler yeni yedek parça mı ("YENİ" etiketi). Çıkmış bir kablo gibi eski parçalarda false.
+@export var inventory_is_new: bool = true
 
 @export_group("Arızalar")
 @export var broken_cables: Array[String] = [] ## Bozuk gelen kablolar

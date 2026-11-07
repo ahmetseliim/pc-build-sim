@@ -1,0 +1,161 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://src/scenes/workbench/Motherboard.gd" id="1_mb"]
+[ext_resource type="PackedScene" path="res://src/scenes/workbench/MotherboardSlot.tscn" id="2_slot"]
+[ext_resource type="PackedScene" path="res://src/scenes/workbench/CpuSocket.tscn" id="3_cpu"]
+[ext_resource type="Script" path="res://src/scenes/workbench/CableLayer.gd" id="4_cables"]
+
+[node name="Motherboard" type="Control"]
+custom_minimum_size = Vector2(960, 540)
+layout_mode = 3
+anchors_preset = 0
+offset_right = 960.0
+offset_bottom = 540.0
+mouse_filter = 2
+script = ExtResource("1_mb")
+
+[node name="Slots" type="Control" parent="."]
+anchors_preset = 0
+offset_right = 960.0
+offset_bottom = 540.0
+mouse_filter = 2
+
+[node name="CPU_Socket" parent="Slots" instance=ExtResource("3_cpu")]
+offset_left = 38.0
+offset_top = 72.0
+offset_right = 153.0
+offset_bottom = 187.0
+
+[node name="Fan_Slot" parent="Slots" instance=ExtResource("2_slot")]
+offset_left = 178.0
+offset_top = 72.0
+offset_right = 293.0
+offset_bottom = 187.0
+slot_id = "cpu_fan"
+accepted_type = "fan"
+slot_label = "CPU FANI"
+border_color = Color(0.008, 0.518, 0.78, 1)
+
+[node name="CPU_Fan_Header" parent="Slots" instance=ExtResource("2_slot")]
+offset_left = 250.0
+offset_top = 196.0
+offset_right = 278.0
+offset_bottom = 214.0
+slot_id = "cpu_fan_header"
+accepted_type = "cpufan"
+slot_label = "FAN"
+border_color = Color(0.22, 0.741, 0.973, 1)
+border_width = 1
+corner_radius = 3.0
+label_size = 7
+label_color = Color(0.22, 0.741, 0.973, 1)
+
+[node name="RAM_1" parent="Slots" instance=ExtResource("2_slot")]
+offset_left = 318.0
+offset_top = 72.0
+offset_right = 360.0
+offset_bottom = 202.0
+slot_id = "ram_1"
+accepted_type = "ram"
+slot_label = "RAM 1"
+
+[node name="RAM_2" parent="Slots" instance=ExtResource("2_slot")]
+offset_left = 385.0
+offset_top = 72.0
+offset_right = 427.0
+offset_bottom = 202.0
+slot_id = "ram_2"
+accepted_type = "ram"
+slot_label = "RAM 2"
+
+[node name="EPS_8Pin" parent="Slots" instance=ExtResource("2_slot")]
+offset_left = 450.0
+offset_top = 24.0
+offset_right = 498.0
+offset_bottom = 48.0
+slot_id = "eps_8pin"
+accepted_type = "eps8"
+slot_label = "CPU 8-PIN"
+border_color = Color(0.133, 0.827, 0.933, 1)
+border_width = 1
+corner_radius = 3.0
+label_size = 7
+label_color = Color(0.133, 0.827, 0.933, 1)
+
+[node name="ATX_24Pin" parent="Slots" instance=ExtResource("2_slot")]
+offset_left = 890.0
+offset_top = 170.0
+offset_right = 918.0
+offset_bottom = 254.0
+slot_id = "atx_24pin"
+accepted_type = "atx24"
+slot_label = "24-PIN GÜÇ"
+border_color = Color(0.961, 0.62, 0.043, 1)
+vertical_label = true
+label_spacing = 1
+
+[node name="SATA_Slot" parent="Slots" instance=ExtResource("2_slot")]
+offset_left = 38.0
+offset_top = 415.0
+offset_right = 178.0
+offset_bottom = 510.0
+slot_id = "sata_1"
+accepted_type = "sata"
+slot_label = "SATA DEPOLAMA"
+border_color = Color(0.176, 0.831, 0.749, 1)
+
+[node name="SATA_Power" parent="Slots" instance=ExtResource("2_slot")]
+offset_left = 180.0
+offset_top = 420.0
+offset_right = 200.0
+offset_bottom = 464.0
+slot_id = "sata_power"
+accepted_type = "satapwr"
+slot_label = "GÜÇ"
+border_color = Color(0.204, 0.827, 0.6, 1)
+border_width = 1
+corner_radius = 3.0
+label_size = 7
+label_color = Color(0.204, 0.827, 0.6, 1)
+vertical_label = true
+
+[node name="SATA_Data" parent="Slots" instance=ExtResource("2_slot")]
+offset_left = 180.0
+offset_top = 472.0
+offset_right = 200.0
+offset_bottom = 502.0
+slot_id = "sata_data"
+accepted_type = "satadata"
+slot_label = "VERİ"
+border_color = Color(0.937, 0.267, 0.267, 1)
+border_width = 1
+corner_radius = 3.0
+label_size = 7
+label_color = Color(0.937, 0.267, 0.267, 1)
+vertical_label = true
+
+[node name="PSU_Slot" parent="Slots" instance=ExtResource("2_slot")]
+offset_left = 722.0
+offset_top = 405.0
+offset_right = 922.0
+offset_bottom = 515.0
+slot_id = "psu"
+accepted_type = "psu"
+slot_label = "GÜÇ KAYNAĞI (PSU)"
+border_color = Color(0.612, 0.639, 0.686, 1)
+
+[node name="SataPort" type="Control" parent="."]
+anchors_preset = 0
+offset_left = 300.0
+offset_top = 478.0
+offset_right = 334.0
+offset_bottom = 494.0
+mouse_filter = 2
+
+[node name="CableLayer" type="Control" parent="."]
+z_index = 10
+anchors_preset = 0
+offset_right = 960.0
+offset_bottom = 540.0
+mouse_filter = 2
+script = ExtResource("4_cables")

@@ -6,11 +6,13 @@
 script = ExtResource("1_scenario")
 title = "Arızalı Kablo"
 shop_stage = 1
+price = 250
 customer = "Mert Bey"
 complaint = ""
 menu_description = "Hazır bir bilgisayar geldi ama bir kablosu bozuk. Arızayı bul, kabloyu değiştir."
 hint = "İpucu: Arızayı bulmak için önce \"Bilgisayarı Başlat\"a bas ve BIOS'taki hata mesajını oku. Bozuk kabloyu fişine tıklayarak sökebilirsin."
-preinstalled_parts = Array[String](["cpu", "paste", "fan", "ram", "ram", "m2", "sata", "gpu", "psu", "atx24", "eps8", "pcie8", "satapwr", "satadata"])
+board_paths = Array[String](["res://data/boards/modern_z790.tres", "res://data/boards/old_office_h81.tres", "res://data/boards/itx_b650.tres"])
+preinstalled_parts = Array[String](["cpu", "paste", "fan", "ram", "ram", "m2", "sata", "gpu", "psu", "atx24", "eps8", "pcie8", "satapwr", "satadata", "cpufan"])
 inventory_parts = Array[String]([])
 broken_cables = Array[String]([])
 random_broken_cable = true

@@ -6,11 +6,13 @@
 script = ExtResource("1_scenario")
 title = "Windows Açılmıyor (Ölü SSD)"
 shop_stage = 1
+price = 600
 customer = "Selin Hanım"
 complaint = "Bilgisayar açılıyor, fanlar dönüyor ama Windows gelmiyor. Ekranda 'Reboot and select proper boot device' yazıyor. Son günlerde dosyaları açarken sürekli takılıyordu."
 menu_description = "Sistem diski ölmüş, Windows açılmıyor. M.2 SSD'nin vidasını sök, yenisiyle değiştir."
 hint = "İpucu: BIOS'ta hangi diskin cevap vermediğine bak. M.2 SSD'yi sabitleyen küçük vidaya basılı tutarak sök; SSD yerinden kalkınca tutup envantere taşı. Sonra \"YENİ\" SSD'yi yuvaya tak ve vidasını sık."
-preinstalled_parts = Array[String](["cpu", "paste", "fan", "ram", "ram", "m2", "sata", "gpu", "psu", "atx24", "eps8", "pcie8", "satapwr", "satadata"])
+board_paths = Array[String](["res://data/boards/modern_z790.tres", "res://data/boards/itx_b650.tres"])
+preinstalled_parts = Array[String](["cpu", "paste", "fan", "ram", "ram", "m2", "sata", "gpu", "psu", "atx24", "eps8", "pcie8", "satapwr", "satadata", "cpufan"])
 inventory_parts = Array[String](["m2"])
 broken_cables = Array[String]([])
 random_broken_cable = false

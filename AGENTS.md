@@ -24,6 +24,17 @@ Proje dizin yapısı ve açıklamaları:
 - `src/resources/ScenarioData.gd` + `data/scenarios/*.tres` — Dükkâna gelen işler (hazır takılı parçalar, envanter, arızalar).
   Yeni senaryo: `.tres` oluştur ve `GameManager.SCENARIOS` listesine ekle
 - `src/scenes/workbench/` — Montaj masası (Motherboard, MotherboardSlot)
+- Anakart modelleri: `src/resources/BoardData.gd` + `data/boards/*.tres` (ad, dönem, soket, RAM türü, renkler) ve
+  yerleşim sahneleri (modern: `Motherboard.tscn`, diğerleri: `src/scenes/workbench/boards/*.tscn`). Kod (`Motherboard.gd`)
+  tüm kartlarda ortaktır; kartta olmayan yuvalar (M.2, ekran kartı, SATA) atlanır, BIOS karta göre konuşur.
+  Senaryo `board_paths` ile hangi kartlarla gelebileceğini söyler (rastgele seçilir).
+  Yeni kart: sahneyi kopyala, yuvaları taşı/sil, `.tres` oluştur ve senaryoların `board_paths` listesine ekle.
+- `src/autoload/CareerManager.gd` — Kariyer: para, itibar (yıldız), gün düzeni, hata sayımı ve kayıt (`user://kariyer.json`).
+  İlk 3 gün `PLANNED_DAYS`, sonrası `CAREER_POOL`'dan rastgele (1. gün 2, sonra 3, 5. günden itibaren 4 müşteri).
+  Ücret senaryonun `price` alanı; her hata -%10 ve -1 yıldız (en az %50 ücret, en az 1 yıldız). Hatalar: macun taşması,
+  sağlam parça sökme, ilk teşhisten sonraki her başarısız BIOS, uyarı çıkaran her sıra hatası. Her iş bitince otomatik kayıt.
+  Menüdeki "Test" listesinden açılan işler kariyeri etkilemez (`is_career = false`).
+- `src/scenes/ui/ResultScreen.tscn` — İş sonucu (ödeme, hatalar, yıldız) ve gün sonu özeti
 - `src/scenes/inventory/` — Envanter çekmecesi
 - `src/scenes/minigames/` — Mini oyunlar (termal macun, vida sıkma, BIOS boot)
 - `src/scenes/ui/` — HUD, menüler ve kullanıcı arayüzü
@@ -55,6 +66,8 @@ Oyun iki aşamalıdır:
   - *Ölü SSD* (`faulty_part: "m2"`): Windows açılmaz, BIOS "M.2 NOT RESPONDING / Reboot and Select proper Boot device" yazar.
     Sökülebilir M.2 ucundaki tek vidayla sabitlenir (`ScrewMechanic.mode = "m2"`): vidaya basılı tutup sök → SSD açılı
     kalkar → envantere taşı → YENİ SSD'yi tak ve vidasını sık (`GameManager.m2_secured`).
+  - *CPU Fan Error* (`cpu_fan_error.tres`): fanın kablosu (`cpufan`, `cable_from: "fan"`) anakarttaki FAN girişine takılı
+    değil; BIOS "CPU Fan Error! Press F1 to Resume" der. Fan sökülünce kablosu da otomatik çıkıp envantere döner.
 - **2. Dükkân (Montaj):** Sıfırdan montaj (`full_build.tres`), aşağıdaki döngü. Bu hâl `tam-montaj-v1` etiketiyle de kayıtlı.
 
 Montaj döngüsü:

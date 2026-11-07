@@ -6,11 +6,13 @@
 script = ExtResource("1_scenario")
 title = "Sıfırdan Montaj"
 shop_stage = 2
+price = 1500
 customer = "Zeynep Hanım"
 complaint = "Parçaları aldım ama toplamaya vaktim yok. Hepsini takıp kablolarını bağlayıp çalışır halde teslim edebilir misin?"
 menu_description = "Tüm parçaları anakarta tak, macun sür, fanı vidala ve kabloları bağla."
+board_paths = Array[String](["res://data/boards/modern_z790.tres"])
 preinstalled_parts = Array[String]([])
-inventory_parts = Array[String](["cpu", "paste", "fan", "ram", "ram", "m2", "sata", "atx24", "eps8", "pcie8", "satapwr", "satadata", "gpu", "psu"])
+inventory_parts = Array[String](["cpu", "paste", "fan", "ram", "ram", "m2", "sata", "atx24", "eps8", "pcie8", "satapwr", "satadata", "cpufan", "gpu", "psu"])
 broken_cables = Array[String]([])
 random_broken_cable = false
 spare_for_broken = true

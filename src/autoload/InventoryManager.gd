@@ -16,7 +16,7 @@ func setup(types: Array[String]) -> void:
 	_ram_count = 0
 	# Tamir dükkânında envanterdekiler yeni yedek parçalardır
 	var scenario: ScenarioData = GameManager.current_scenario
-	var spares: bool = scenario != null and scenario.shop_stage == 1
+	var spares: bool = scenario != null and scenario.shop_stage == 1 and scenario.inventory_is_new
 	for type: String in types:
 		var part: ComponentData = create_part(type)
 		part.is_new = spares
@@ -56,6 +56,9 @@ func create_part(type: String) -> ComponentData:
 			return _cable("satapwr", "SATA GÜÇ", Vector2(20, 44), "#34d399", 4.5, "psu_sata", Vector2.RIGHT)
 		"satadata":
 			return _cable("satadata", "SATA VERİ", Vector2(20, 30), "#ef4444", 3.5, "mb_sata", Vector2.RIGHT)
+		"cpufan":
+			# Fanın kendi kablosu: fandan çıkar, anakarttaki CPU_FAN girişine takılır
+			return _cable("cpufan", "FAN", Vector2(28, 18), "#38bdf8", 3.0, "fan", Vector2.LEFT)
 	push_error("Bilinmeyen parça türü: %s" % type)
 	return _create(ComponentData.new(), type, type, Vector2(60, 40))
 

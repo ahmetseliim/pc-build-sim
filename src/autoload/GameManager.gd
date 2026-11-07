@@ -6,13 +6,15 @@ extends Node
 const MENU_SCENE: String = "res://src/scenes/menu/MainMenu.tscn"
 const GAME_SCENE: String = "res://src/scenes/main/Main.tscn"
 const DEFAULT_SCENARIO: String = "res://data/scenarios/full_build.tres"
-const CABLE_TYPES: Array[String] = ["atx24", "eps8", "pcie8", "satapwr", "satadata"]
+const DEFAULT_BOARD: String = "res://data/boards/modern_z790.tres"
+const CABLE_TYPES: Array[String] = ["atx24", "eps8", "pcie8", "satapwr", "satadata", "cpufan"]
 ## Menüde listelenen senaryolar
 const SCENARIOS: Array[String] = [
 	"res://data/scenarios/repair_broken_cable.tres",
 	"res://data/scenarios/thermal_paste_renewal.tres",
 	"res://data/scenarios/faulty_ram.tres",
 	"res://data/scenarios/dead_ssd.tres",
+	"res://data/scenarios/cpu_fan_error.tres",
 	"res://data/scenarios/full_build.tres",
 ]
 
@@ -23,9 +25,12 @@ const COMPLAINTS: Dictionary = {
 	"pcie8": "Oyun açınca ekran gidiyor, ekran kartını hiç algılamıyor.",
 	"satapwr": "Fotoğraflarımın olduğu ikinci disk birden görünmez oldu.",
 	"satadata": "Fotoğraflarımın olduğu ikinci disk birden görünmez oldu.",
+	"cpufan": "Açılışta 'CPU Fan Error' diye bir uyarı çıkıyor, bilgisayar da çok ısınıp kapanıyor.",
 }
 
 var current_scenario: ScenarioData = null
+var current_board: BoardData = null ## Bu işte gelen bilgisayarın anakartı
+var board_slot_types: Array[String] = [] ## Yüklü anakartta bulunan yuva türleri
 var scenario_broken: Array[String] = [] ## Bu oturumda bozuk gelen kablolar (rastgele seçim çözülmüş)
 var scenario_inventory: Array[String] = [] ## Bu oturumda envantere konan parçalar
 
@@ -59,14 +64,11 @@ func go_to_menu() -> void:
 func _prepare(scenario: ScenarioData) -> void:
 	reset_build()
 	current_scenario = scenario
+	# Bu işte gelen bilgisayarın anakartı (uygun olanlardan rastgele)
+	var board_path: String = DEFAULT_BOARD if scenario.board_paths.is_empty() else scenario.board_paths.pick_random()
+	current_board = load(board_path)
+	# Rastgele bozuk kablo anakart yüklenince seçilir (kartta olmayan kablo seçilmesin diye)
 	scenario_broken = scenario.broken_cables.duplicate()
-	if scenario.random_broken_cable:
-		var cables: Array[String] = []
-		for type: String in scenario.preinstalled_parts:
-			if type in CABLE_TYPES:
-				cables.append(type)
-		if not cables.is_empty():
-			scenario_broken.append(cables.pick_random())
 	scenario_inventory = scenario.inventory_parts.duplicate()
 	if scenario.spare_for_broken:
 		scenario_inventory.append_array(scenario_broken)
@@ -78,9 +80,16 @@ func get_complaint() -> String:
 	if current_scenario.complaint != "":
 		return current_scenario.complaint
 	for type: String in scenario_broken:
+		# M.2'siz eski kartta SATA disk sistem diskidir
+		if type in ["satapwr", "satadata"] and not board_has("m2"):
+			return "Bilgisayar açılıyor ama Windows gelmiyor, ekranda disk bulunamadı yazıyor."
 		if COMPLAINTS.has(type):
 			return COMPLAINTS[type]
 	return "Bilgisayarımda bir sorun var, bakabilir misin?"
+
+# Yüklü anakartta bu türden yuva var mı?
+func board_has(type: String) -> bool:
+	return type in board_slot_types
 
 # CPU soketinin durumunu değiştirir ve herkese duyurur
 func set_cpu_state(state: String) -> void:

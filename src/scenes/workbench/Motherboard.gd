@@ -1,45 +1,48 @@
 class_name Motherboard
 extends Control
 
-# Anakart yöneticisi
-# Anakartı çizer, senaryoya göre hazır parçaları yerleştirir, bırakılan parçaları
-# ve kabloları ilgili yuvaya takar, bozuk kabloların sökülmesini yönetir ve
-# montaj sırası kurallarını uygular.
+# Anakart yöneticisi (tüm anakart modellerinde ortak)
+# Anakartı karta özel renk ve yazıyla çizer, senaryoya göre hazır parçaları yerleştirir,
+# bırakılan parçaları ve kabloları ilgili yuvaya takar, söküm işlerini yönetir ve
+# montaj sırası kurallarını uygular. Yuvaların yerleşimi her kartın kendi sahnesindedir
+# (src/scenes/workbench/boards/); bir kartta olmayan yuvalar (M.2, ekran kartı, SATA) atlanır.
 
-const BOARD_SIZE: Vector2 = Vector2(960, 540)
 const BORDER: float = 3.0
 const GRID_STEP: float = 20.0
-const GRID_COLOR: Color = Color(30.0 / 255.0, 62.0 / 255.0, 98.0 / 255.0, 0.2)
-const TRACE_COLOR: Color = Color(0.3, 0.6, 1.0, 0.1)
-const TITLE: String = "ANAKART • Z790 • DDR5 EXPERT"
 const TITLE_POS: Vector2 = Vector2(38, 28)
-const SATA_PORT_RECT: Rect2 = Rect2(300, 478, 34, 16) ## SATA veri kablosunun çıktığı anakart portu
-const MOUNT_HOLES: Array[Vector2] = [Vector2(20, 20), Vector2(940, 20), Vector2(20, 520), Vector2(940, 520), Vector2(460, 215)]
 const CABLE_SNAP: float = 14.0 ## Küçük konnektörler için bırakma toleransı (px)
 const ScrewMechanicScene: PackedScene = preload("res://src/scenes/minigames/ScrewMechanic.tscn")
 
 var slots: Array[MotherboardSlot] = []
+var board: BoardData = null
 
 @onready var cpu_socket: CpuSocket = $Slots/CPU_Socket
 @onready var fan_slot: MotherboardSlot = $Slots/Fan_Slot
-@onready var gpu_slot: MotherboardSlot = $Slots/GPU_Slot
-@onready var sata_slot: MotherboardSlot = $Slots/SATA_Slot
 @onready var psu_slot: MotherboardSlot = $Slots/PSU_Slot
-@onready var gpu_power: MotherboardSlot = $Slots/GPU_Power
-@onready var sata_power: MotherboardSlot = $Slots/SATA_Power
-@onready var sata_data: MotherboardSlot = $Slots/SATA_Data
 @onready var cable_layer: CableLayer = $CableLayer
+# Her kartta bulunmayabilen yuvalar
+@onready var gpu_slot: MotherboardSlot = get_node_or_null("Slots/GPU_Slot")
+@onready var gpu_power: MotherboardSlot = get_node_or_null("Slots/GPU_Power")
+@onready var sata_slot: MotherboardSlot = get_node_or_null("Slots/SATA_Slot")
+@onready var sata_power: MotherboardSlot = get_node_or_null("Slots/SATA_Power")
+@onready var sata_data: MotherboardSlot = get_node_or_null("Slots/SATA_Data")
+@onready var sata_port: Control = get_node_or_null("SataPort") ## SATA veri kablosunun çıktığı anakart portu
 
 func _ready() -> void:
-	custom_minimum_size = BOARD_SIZE
+	custom_minimum_size = size
+	board = GameManager.current_board if GameManager.current_board else load(GameManager.DEFAULT_BOARD)
 	for child: Node in $Slots.get_children():
 		if child is MotherboardSlot:
 			slots.append(child)
+	GameManager.board_slot_types.clear()
+	for slot: MotherboardSlot in slots:
+		if not slot.accepted_type in GameManager.board_slot_types:
+			GameManager.board_slot_types.append(slot.accepted_type)
 
 	# Cihaz üzerindeki konnektörler cihaz takılınca belirir
-	gpu_power.visible = false
-	sata_power.visible = false
-	sata_data.visible = false
+	for connector: MotherboardSlot in [gpu_power, sata_power, sata_data]:
+		if connector:
+			connector.visible = false
 
 	# EventBus bağlantıları
 	EventBus.part_drag_started.connect(_on_part_drag_started)
@@ -64,8 +67,15 @@ func get_slot_at(global_point: Vector2) -> MotherboardSlot:
 
 # Kablonun çıktığı port: {point, dir} (anakart koordinatı). Port yoksa boş sözlük.
 func get_cable_origin(port_id: String) -> Dictionary:
+	if port_id == "fan":
+		# Fan kablosu fanın alt kenarından çıkar
+		if not fan_slot.is_occupied:
+			return {}
+		return {"point": fan_slot.position + Vector2(30, fan_slot.size.y), "dir": Vector2.DOWN}
 	if port_id == "mb_sata":
-		return {"point": Vector2(SATA_PORT_RECT.position.x, SATA_PORT_RECT.get_center().y), "dir": Vector2.LEFT}
+		if sata_port == null:
+			return {}
+		return {"point": Vector2(sata_port.position.x, sata_port.position.y + sata_port.size.y / 2.0), "dir": Vector2.LEFT}
 	if PartArt.PSU_PORTS.has(port_id) and psu_slot.is_occupied:
 		var port: Dictionary = PartArt.PSU_PORTS[port_id]
 		return {"point": psu_slot.position + port["pos"], "dir": port["dir"]}
@@ -119,6 +129,20 @@ func _preinstall_scenario_parts() -> void:
 			if slot.accepted_type == type:
 				slot.latches_interactive = true
 
+	# Rastgele bozuk kablo: bu kartta gerçekten takılı olacak kablolar arasından seçilir
+	if scenario.random_broken_cable:
+		var candidates: Array[String] = []
+		for data: ComponentData in cables:
+			if board_has_slot(data.part_type) and not data.part_type in candidates:
+				candidates.append(data.part_type)
+		if not candidates.is_empty():
+			var pick: String = candidates.pick_random()
+			GameManager.scenario_broken.append(pick)
+			if scenario.spare_for_broken:
+				var spare: ComponentData = InventoryManager.create_part(pick)
+				spare.is_new = true
+				InventoryManager.add_part(spare)
+
 	# Sonra kablolar (PSU ve cihazlar takılı olmalı)
 	for data: ComponentData in cables:
 		var slot: MotherboardSlot = _free_slot_for(data.part_type)
@@ -133,6 +157,12 @@ func _preinstall_scenario_parts() -> void:
 		cable_layer.add_cable(part, origin["point"], origin["dir"], Rect2(slot.position, slot.size), part.is_broken, false)
 
 	_check_complete()
+
+func board_has_slot(type: String) -> bool:
+	for slot: MotherboardSlot in slots:
+		if slot.accepted_type == type:
+			return true
+	return false
 
 func _new_part(data: ComponentData) -> PartItem:
 	var part: PartItem = PartItem.new()
@@ -245,6 +275,9 @@ func _on_part_extract_requested(part_node: Control) -> void:
 	slot.uninstall()
 	if part.is_broken:
 		GameManager.broken_parts.erase(part.data.part_type)
+	elif not part.data.is_new:
+		# Sağlam (asıl) parçayı sökmek yanlış teşhistir
+		EventBus.mistake_made.emit("healthy_removed")
 	# Elde taşınma hissi
 	part.pivot_offset = part.size / 2.0
 	create_tween().tween_property(part, "scale", Vector2(1.1, 1.1), 0.12).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
@@ -336,14 +369,23 @@ func _drop_cable(part: PartItem, global_point: Vector2) -> void:
 		return
 	var origin: Dictionary = get_cable_origin(part.data.cable_from)
 	if origin.is_empty():
-		_reject(part, "Önce güç kaynağını takmalısın!")
+		if part.data.cable_from == "fan":
+			_reject(part, "Önce CPU fanını takmalısın!")
+		else:
+			_reject(part, "Önce güç kaynağını takmalısın!")
 		return
 	match part.data.part_type:
 		"pcie8":
+			if gpu_slot == null:
+				_reject(part, "Bu anakartta ekran kartı yuvası yok.")
+				return
 			if not gpu_slot.is_occupied:
 				_reject(part, "Önce ekran kartını takmalısın!")
 				return
 		"satapwr", "satadata":
+			if sata_slot == null:
+				_reject(part, "Bu anakartta SATA disk yeri yok.")
+				return
 			if not sata_slot.is_occupied:
 				_reject(part, "Önce SATA SSD'yi takmalısın!")
 				return
@@ -417,8 +459,16 @@ func _lift_to_drag_layer(part: PartItem) -> void:
 		part.reparent(layer)
 	part.pivot_offset = part.size / 2.0
 
-# Fanın dört vidası söküldü: fanı yuvadan çıkarıp envantere geri koy
+# Fanın dört vidası söküldü: önce fan kablosu çıkar, sonra fan yuvadan çıkıp envantere döner
 func _on_fan_unmounted() -> void:
+	for plug: PartItem in _placed_parts_of("cpufan"):
+		var header: MotherboardSlot = plug.get_parent() as MotherboardSlot
+		header.uninstall()
+		cable_layer.remove_cable(plug)
+		if plug.is_broken:
+			GameManager.broken_parts.erase("cpufan")
+		plug.unplace()
+		EventBus.part_return_requested.emit(plug)
 	for child: Node in fan_slot.get_children():
 		if child is PartItem:
 			var fan: PartItem = child as PartItem
@@ -429,7 +479,7 @@ func _on_fan_unmounted() -> void:
 			fan.unplace()
 			EventBus.part_return_requested.emit(fan)
 			break
-	EventBus.info_requested.emit("Fan söküldü. Şimdi eski macunu temizle.")
+	EventBus.info_requested.emit("Fan ve kablosu söküldü. Şimdi eski macunu temizle.")
 	_check_complete()
 
 # Tüm yuvalar dolu, fan vidalı, macun yeni ve bozuk kablo yoksa bilgisayar hazırdır
@@ -442,6 +492,8 @@ func _check_complete() -> void:
 	GameManager.mark_complete(done)
 
 func _reveal(slot: MotherboardSlot, animate: bool) -> void:
+	if slot == null:
+		return
 	slot.visible = true
 	if animate:
 		slot.modulate.a = 0.0
@@ -458,47 +510,64 @@ func _draw() -> void:
 	var rect: Rect2 = Rect2(Vector2.ZERO, size)
 	var canvas: RID = get_canvas_item()
 
+	if board == null:
+		return
+
 	# 1. Arka plan, yuvarlak köşeler ve gölge
-	UIStyle.box(Color("#0b192c"), 12, 0, Color.TRANSPARENT, Color(0, 0, 0, 0.5), 15, Vector2(0, 10)).draw(canvas, rect)
+	UIStyle.box(board.pcb_color, 12, 0, Color.TRANSPARENT, Color(0, 0, 0, 0.5), 15, Vector2(0, 10)).draw(canvas, rect)
 
 	# 2. Izgara çizgileri (20 px)
 	var inner: Rect2 = rect.grow(-BORDER)
 	var x: float = inner.position.x + 0.5
 	while x < inner.end.x:
-		draw_line(Vector2(x, inner.position.y), Vector2(x, inner.end.y), GRID_COLOR, 1.0)
+		draw_line(Vector2(x, inner.position.y), Vector2(x, inner.end.y), board.grid_color, 1.0)
 		x += GRID_STEP
 	var y: float = inner.position.y + 0.5
 	while y < inner.end.y:
-		draw_line(Vector2(inner.position.x, y), Vector2(inner.end.x, y), GRID_COLOR, 1.0)
+		draw_line(Vector2(inner.position.x, y), Vector2(inner.end.x, y), board.grid_color, 1.0)
 		y += GRID_STEP
 
-	# 3. Süslemeler: devre yolları, vida delikleri, SATA portu
+	# 3. Süslemeler: arka G/Ç paneli, devre yolları, vida delikleri, SATA portu
+	_draw_rear_io()
 	_draw_traces()
-	for hole: Vector2 in MOUNT_HOLES:
+	for hole: Vector2 in [Vector2(20, 20), Vector2(size.x - 20, 20), Vector2(20, size.y - 20), Vector2(size.x - 20, size.y - 20)]:
 		draw_circle(hole, 8.0, Color(0.83, 0.69, 0.3, 0.25))
-		draw_circle(hole, 5.0, Color("#05101f"))
-	_draw_sata_port()
+		draw_circle(hole, 5.0, board.pcb_color.darkened(0.6))
+	if sata_port:
+		_draw_sata_port()
 
 	# 4. Kenarlık
-	UIStyle.box(Color.TRANSPARENT, 12, int(BORDER), Color("#1e3e62")).draw(canvas, rect)
+	UIStyle.box(Color.TRANSPARENT, 12, int(BORDER), board.border_color).draw(canvas, rect)
 
 	# 5. Başlık
 	var font: Font = UIStyle.ui_font(true, 2)
-	draw_string(font, TITLE_POS + Vector2(0, font.get_ascent(14)), TITLE, HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color("#00ffcc"))
+	draw_string(font, TITLE_POS + Vector2(0, font.get_ascent(14)), board.title, HORIZONTAL_ALIGNMENT_LEFT, -1, 14, board.title_color)
 
+# Kartın sol kenarındaki arka G/Ç paneli (USB, ses, ağ portları); sadece görsel, sönük
+func _draw_rear_io() -> void:
+	var strip: Rect2 = Rect2(7, 60, 18, minf(270.0, size.y - 120.0))
+	UIStyle.box(Color(0.55, 0.58, 0.62, 0.22), 3).draw(get_canvas_item(), strip)
+	var py: float = strip.position.y + 8.0
+	while py < strip.end.y - 14.0:
+		draw_rect(Rect2(strip.position.x + 4, py, 10, 12), Color(0, 0, 0, 0.35))
+		py += 22.0
+
+# Devre yolları: işlemciden RAM'lere ve aşağıdaki yuvalara (karttaki yuvalara göre)
 func _draw_traces() -> void:
-	# İşlemciden RAM'e
-	for i: int in range(5):
-		var ty: float = 92.0 + i * 9.0
-		draw_line(Vector2(153, ty), Vector2(318, ty), TRACE_COLOR, 1.5)
-	# İşlemciden M.2'ye ve M.2'den PCIe'ye
-	for i: int in range(5):
-		var tx: float = 60.0 + i * 16.0
-		draw_line(Vector2(tx, 187), Vector2(tx, 227), TRACE_COLOR, 1.5)
-		draw_line(Vector2(tx, 265), Vector2(tx, 337), TRACE_COLOR, 1.5)
+	var cpu: Rect2 = Rect2(cpu_socket.position, cpu_socket.size)
+	for slot: MotherboardSlot in slots:
+		var r: Rect2 = Rect2(slot.position, slot.size)
+		if slot.accepted_type == "ram":
+			for i: int in range(5):
+				var ty: float = cpu.position.y + 20.0 + i * 9.0
+				draw_line(Vector2(cpu.end.x, ty), Vector2(r.position.x, ty), board.trace_color, 1.5)
+		elif slot.accepted_type in ["m2", "gpu"] and r.position.y > cpu.end.y:
+			for i: int in range(5):
+				var tx: float = cpu.position.x + 22.0 + i * 16.0
+				draw_line(Vector2(tx, cpu.end.y), Vector2(tx, r.position.y), board.trace_color, 1.5)
 
 func _draw_sata_port() -> void:
-	var r: Rect2 = SATA_PORT_RECT
+	var r: Rect2 = Rect2(sata_port.position, sata_port.size)
 	UIStyle.box(Color("#111827"), 2, 1, Color(0.94, 0.27, 0.27, 0.8)).draw(get_canvas_item(), r)
 	draw_rect(Rect2(r.position + Vector2(4, 5), Vector2(r.size.x - 10, 4)), Color("#374151"))
 	draw_rect(Rect2(r.position + Vector2(r.size.x - 8, 5), Vector2(3, 7)), Color("#374151"))

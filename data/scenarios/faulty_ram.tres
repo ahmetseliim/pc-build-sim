@@ -6,11 +6,13 @@
 script = ExtResource("1_scenario")
 title = "Bip Sesi ve Arızalı RAM"
 shop_stage = 1
+price = 400
 customer = "Kemal Usta"
 complaint = "Bilgisayar açılıyor gibi oluyor ama ekrana görüntü gelmiyor, kasadan da bip bip ses geliyor. Dün de birkaç kere mavi ekran verip kendini kapatmıştı."
 menu_description = "Bilgisayar bip sesi veriyor ve görüntü yok. Arızalı RAM'i BIOS'tan bul, değiştir."
 hint = "İpucu: BIOS hangi RAM yuvasının arızalı olduğunu söyler. RAM'i sökmek için yuvanın iki ucundaki mandallara tıkla; RAM yerinden kalkınca basılı tutup envantere taşı. Sonra \"YENİ\" etiketli RAM'i boş yuvaya sürükle."
-preinstalled_parts = Array[String](["cpu", "paste", "fan", "ram", "ram", "m2", "sata", "gpu", "psu", "atx24", "eps8", "pcie8", "satapwr", "satadata"])
+board_paths = Array[String](["res://data/boards/modern_z790.tres", "res://data/boards/old_office_h81.tres", "res://data/boards/itx_b650.tres"])
+preinstalled_parts = Array[String](["cpu", "paste", "fan", "ram", "ram", "m2", "sata", "gpu", "psu", "atx24", "eps8", "pcie8", "satapwr", "satadata", "cpufan"])
 inventory_parts = Array[String](["ram"])
 broken_cables = Array[String]([])
 random_broken_cable = false

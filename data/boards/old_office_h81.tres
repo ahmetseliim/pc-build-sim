@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="BoardData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/resources/BoardData.gd" id="1_board"]
+
+[resource]
+script = ExtResource("1_board")
+display_name = "Eski Ofis Bilgisayarı (H81M)"
+title = "ANAKART • H81M-E • DDR3 OFFICE"
+era = "2013"
+form_factor = "mATX"
+socket = "LGA1150"
+ram_type = "DDR3"
+ram_size_gb = 4
+onboard_graphics = "Intel HD Graphics 4600"
+scene_path = "res://src/scenes/workbench/boards/OldOfficeBoard.tscn"
+pcb_color = Color(0.051, 0.2, 0.149, 1)
+grid_color = Color(0.2, 0.42, 0.3, 0.18)
+border_color = Color(0.13, 0.36, 0.26, 1)
+title_color = Color(0.78, 0.93, 0.45, 1)
+trace_color = Color(0.85, 0.75, 0.35, 0.12)

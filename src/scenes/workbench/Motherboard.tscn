@@ -36,6 +36,20 @@ accepted_type = "fan"
 slot_label = "CPU FANI"
 border_color = Color(0.008, 0.518, 0.78, 1)
 
+[node name="CPU_Fan_Header" parent="Slots" instance=ExtResource("2_slot")]
+offset_left = 250.0
+offset_top = 196.0
+offset_right = 278.0
+offset_bottom = 214.0
+slot_id = "cpu_fan_header"
+accepted_type = "cpufan"
+slot_label = "FAN"
+border_color = Color(0.22, 0.741, 0.973, 1)
+border_width = 1
+corner_radius = 3.0
+label_size = 7
+label_color = Color(0.22, 0.741, 0.973, 1)
+
 [node name="RAM_1" parent="Slots" instance=ExtResource("2_slot")]
 offset_left = 318.0
 offset_top = 72.0
@@ -161,6 +175,14 @@ slot_id = "psu"
 accepted_type = "psu"
 slot_label = "GÜÇ KAYNAĞI (PSU)"
 border_color = Color(0.612, 0.639, 0.686, 1)
+
+[node name="SataPort" type="Control" parent="."]
+anchors_preset = 0
+offset_left = 300.0
+offset_top = 478.0
+offset_right = 334.0
+offset_bottom = 494.0
+mouse_filter = 2
 
 [node name="CableLayer" type="Control" parent="."]
 z_index = 10

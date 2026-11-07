@@ -125,7 +125,9 @@ static func _draw_ram(ci: CanvasItem, d: ComponentData, r: Rect2) -> void:
 		ci.draw_line(Vector2(x, contacts.position.y), Vector2(x, contacts.end.y), Color(0, 0, 0, 0.3), 1.0)
 		x += 3.0
 	ci.draw_rect(Rect2(o + Vector2(w * 0.4, h - 12), Vector2(3, 9)), Color("#1e293b"))
-	_vtext(ci, o + Vector2(w / 2.0, h * 0.62), "DDR5 · 16GB", 8, Color("#e2e8f0"))
+	var board: BoardData = GameManager.current_board
+	var ram_label: String = "%s · %dGB" % [board.ram_type, board.ram_size_gb] if board else "DDR5 · 16GB"
+	_vtext(ci, o + Vector2(w / 2.0, h * 0.62), ram_label, 8, Color("#e2e8f0"))
 	if d.is_new:
 		var badge: Rect2 = Rect2(o + Vector2(4, h - 27), Vector2(w - 8, 12))
 		_box(ci, badge, Color("#16a34a"), 2)

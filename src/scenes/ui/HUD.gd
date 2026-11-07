@@ -31,7 +31,40 @@ func _ready() -> void:
 	start_work_button.pressed.connect(_close_order_card)
 	EventBus.warning_requested.connect(show_warning)
 	EventBus.info_requested.connect(show_info)
+	_build_status_bar()
+	EventBus.career_updated.connect(_update_status_bar)
 	_show_order_card()
+
+# --- Durum çubuğu (gün, müşteri, kasa, itibar, hata) -------------------------
+
+var _status_label: Label = null
+
+func _build_status_bar() -> void:
+	var bar: PanelContainer = PanelContainer.new()
+	var style: StyleBoxFlat = UIStyle.box(Color(0.06, 0.09, 0.16, 0.85), 8)
+	style.content_margin_left = 14
+	style.content_margin_right = 14
+	style.content_margin_top = 6
+	style.content_margin_bottom = 6
+	bar.add_theme_stylebox_override("panel", style)
+	bar.position = Vector2(120, 10)
+	bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_status_label = Label.new()
+	_status_label.add_theme_font_override("font", UIStyle.ui_font(true))
+	_status_label.add_theme_font_size_override("font_size", 13)
+	_status_label.add_theme_color_override("font_color", Color.WHITE)
+	bar.add_child(_status_label)
+	add_child(bar)
+	_update_status_bar()
+
+func _update_status_bar() -> void:
+	var errors: String = "Hata: %d" % CareerManager.total_mistakes()
+	if CareerManager.is_career:
+		_status_label.text = "Gün %d  ·  Müşteri %d/%d  ·  💰 %d ₺  ·  ★ %.1f  ·  %s" % [
+			CareerManager.day, CareerManager.job_index + 1, CareerManager.customers_today(),
+			CareerManager.money, CareerManager.average_stars(), errors]
+	else:
+		_status_label.text = "TEST MODU  ·  %s" % errors
 
 # --- İş emri -----------------------------------------------------------------
 
@@ -44,6 +77,9 @@ func _show_order_card() -> void:
 	header_label.text = "İŞ EMRİ  ·  " + stage
 	title_label.text = scenario.title
 	customer_label.text = "Müşteri: " + scenario.customer
+	var board: BoardData = GameManager.current_board
+	if board:
+		customer_label.text += "   ·   Bilgisayar: %s, %s" % [board.display_name, board.era]
 	complaint_label.text = "“" + GameManager.get_complaint() + "”"
 	hint_label.visible = scenario.hint != ""
 	hint_label.text = scenario.hint

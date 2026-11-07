@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="BoardData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/resources/BoardData.gd" id="1_board"]
+
+[resource]
+script = ExtResource("1_board")
+display_name = "Modern Oyuncu PC (Z790)"
+title = "ANAKART • Z790 • DDR5 EXPERT"
+era = "Güncel"
+form_factor = "ATX"
+socket = "LGA1700"
+ram_type = "DDR5"
+ram_size_gb = 16
+onboard_graphics = ""
+scene_path = "res://src/scenes/workbench/Motherboard.tscn"
+pcb_color = Color(0.043, 0.098, 0.173, 1)
+grid_color = Color(0.118, 0.243, 0.384, 0.2)
+border_color = Color(0.118, 0.243, 0.384, 1)
+title_color = Color(0, 1, 0.8, 1)
+trace_color = Color(0.3, 0.6, 1, 0.1)

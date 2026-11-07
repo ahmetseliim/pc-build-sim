@@ -58,10 +58,24 @@ func _build_sequence() -> void:
 		_halt()
 		return
 	_ok("CPU Power (EPS 8-Pin): CONNECTED")
-	_ok("CPU: Intel Core / AMD Ryzen Detected @ 4.80GHz")
+	var socket: String = GameManager.current_board.socket if GameManager.current_board else ""
+	match socket:
+		"LGA1150":
+			_ok("CPU: Intel Core i5-4590 @ 3.30GHz (LGA1150)")
+		"AM5":
+			_ok("CPU: AMD Ryzen 7 7800X3D @ 4.20GHz (AM5)")
+		_:
+			_ok("CPU: Intel Core i7-14700K @ 5.40GHz (LGA1700)")
 	if not GameManager.fan_mounted:
 		_fail("CPU_FAN: NOT DETECTED")
 		_fail("CPU Temperature: 105°C — CRITICAL, SHUTTING DOWN")
+		_halt()
+		return
+	if GameManager.board_has("cpufan") and not GameManager.is_working("cpufan"):
+		_fail("CPU_FAN Speed: 0 RPM — NOT DETECTED")
+		_ok("")
+		_fail("CPU Fan Error!")
+		_fail("Press F1 to Resume")
 		_halt()
 		return
 	if GameManager.paste_old:
@@ -79,27 +93,42 @@ func _build_sequence() -> void:
 		_fail("*** BEEP BEEP BEEP (Memory Error) ***")
 		_halt()
 		return
-	elif ram_count >= 2:
-		_ok("Memory: 32768MB OK (DDR5 Dual Channel)")
+	# Kartın RAM türü ve boyutu
+	var board: BoardData = GameManager.current_board
+	var ram_type: String = board.ram_type if board else "DDR5"
+	var stick_mb: int = (board.ram_size_gb if board else 16) * 1024
+	if ram_count >= 2:
+		_ok("Memory: %dMB OK (%s Dual Channel)" % [stick_mb * ram_count, ram_type])
 	elif ram_count == 1:
-		_fail("Memory: 16384MB (Single Channel) — 1 DIMM SLOT EMPTY")
+		_fail("Memory: %dMB (Single Channel) — 1 DIMM SLOT EMPTY" % stick_mb)
 	else:
 		_fail("Memory: NO DIMM DETECTED")
 		_fail("*** BEEP — BEEP — BEEP (No Memory) ***")
 		_halt()
 		return
-	var boot_drive_ok: bool = GameManager.is_working("m2") and GameManager.m2_secured
-	if boot_drive_ok:
-		_ok("Storage: M.2 NVMe Primary SSD OK")
-	elif "m2" in GameManager.broken_parts:
-		_fail("Storage: M.2 NVMe — NOT RESPONDING (S.M.A.R.T. FAILURE)")
-	else:
-		_fail("Storage: M.2 NVMe — NOT DETECTED")
-	if GameManager.is_working("sata") and GameManager.is_working("satapwr") and GameManager.is_working("satadata"):
-		_ok("Storage: SATA SSD (6 Gb/s) OK")
-	else:
-		_fail("Storage: SATA SSD NOT FOUND")
-	if GameManager.is_working("gpu") and GameManager.is_working("pcie8"):
+
+	# Diskler: M.2'li kartta sistem diski M.2'dir; M.2'siz eski kartta SATA disk
+	var sata_ok: bool = GameManager.is_working("sata") and GameManager.is_working("satapwr") and GameManager.is_working("satadata")
+	var boot_drive_ok: bool = sata_ok
+	if GameManager.board_has("m2"):
+		boot_drive_ok = GameManager.is_working("m2") and GameManager.m2_secured
+		if boot_drive_ok:
+			_ok("Storage: M.2 NVMe Primary SSD OK")
+		elif "m2" in GameManager.broken_parts:
+			_fail("Storage: M.2 NVMe — NOT RESPONDING (S.M.A.R.T. FAILURE)")
+		else:
+			_fail("Storage: M.2 NVMe — NOT DETECTED")
+	if GameManager.board_has("sata"):
+		var role: String = "Secondary" if GameManager.board_has("m2") else "Primary"
+		if sata_ok:
+			_ok("Storage: SATA SSD %s (6 Gb/s) OK" % role)
+		else:
+			_fail("Storage: SATA SSD %s — NOT FOUND" % role)
+
+	# Ekran kartı; yuvası olmayan kartta işlemcinin dahili grafiği
+	if not GameManager.board_has("gpu"):
+		_ok("Onboard Graphics: %s ... OK" % (board.onboard_graphics if board else "iGPU"))
+	elif GameManager.is_working("gpu") and GameManager.is_working("pcie8"):
 		_ok("PCIe Slot 1: Discrete GPU Initialized")
 		_ok("GPU Power (PCIe 8-Pin): CONNECTED")
 	else:
@@ -116,7 +145,7 @@ func _build_sequence() -> void:
 	_ok("")
 	_ok("⚡ TEBRİKLER! BİLGİSAYAR SORUNSUZ ÇALIŞIYOR. MÜŞTERİYE TESLİM EDİLEBİLİR!")
 	_line("", OK_COLOR)
-	_line("(Menüye dönmek için tıkla)", NOTE_COLOR)
+	_line("(Ödemeyi almak için tıkla)" if CareerManager.is_career else "(Menüye dönmek için tıkla)", NOTE_COLOR)
 
 # "RAM 2" -> "DIMM_A2 (RAM 2)"
 func _dimm_name(slot_label: String) -> String:
@@ -169,6 +198,9 @@ func _gui_input(event: InputEvent) -> void:
 	if not can_close:
 		return
 	if boot_ok:
-		GameManager.go_to_menu()
+		if CareerManager.is_career:
+			CareerManager.finish_job()
+		else:
+			GameManager.go_to_menu()
 	else:
 		visible = false

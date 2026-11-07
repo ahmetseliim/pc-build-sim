@@ -21,6 +21,7 @@ EventBus="*res://src/autoload/EventBus.gd"
 GameManager="*res://src/autoload/GameManager.gd"
 InventoryManager="*res://src/autoload/InventoryManager.gd"
 AudioManager="*res://src/autoload/AudioManager.gd"
+CareerManager="*res://src/autoload/CareerManager.gd"
 
 [display]
 

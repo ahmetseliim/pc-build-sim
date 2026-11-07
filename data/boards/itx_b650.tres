@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="BoardData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/resources/BoardData.gd" id="1_board"]
+
+[resource]
+script = ExtResource("1_board")
+display_name = "Mini ITX Oyuncu PC (B650I)"
+title = "ANAKART • B650I • DDR5 ITX"
+era = "Güncel"
+form_factor = "ITX"
+socket = "AM5"
+ram_type = "DDR5"
+ram_size_gb = 16
+onboard_graphics = ""
+scene_path = "res://src/scenes/workbench/boards/ItxBoard.tscn"
+pcb_color = Color(0.067, 0.071, 0.082, 1)
+grid_color = Color(1, 1, 1, 0.04)
+border_color = Color(0.32, 0.32, 0.36, 1)
+title_color = Color(0.96, 0.45, 0.71, 1)
+trace_color = Color(0.96, 0.45, 0.71, 0.09)

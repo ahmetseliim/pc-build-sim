@@ -30,5 +30,5 @@ extends Resource
 @export_group("Kablo")
 @export var cable_color: Color = Color.WHITE
 @export var cable_width: float = 6.0
-@export var cable_from: String = "" ## Kablonun çıktığı port: psu_atx, psu_eps, psu_pcie, psu_sata, mb_sata
+@export var cable_from: String = "" ## Kablonun çıktığı port: psu_atx, psu_eps, psu_pcie, psu_sata, mb_sata, fan
 @export var cable_entry: Vector2 = Vector2.RIGHT ## Kablonun fişten çıktığı yön
