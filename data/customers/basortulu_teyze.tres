@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="CustomerData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://src/resources/CustomerData.gd" id="1_customer"]
+[ext_resource type="Texture2D" path="res://assets/characters/basortulu_teyze.svg" id="2_texture"]
+
+[resource]
+script = ExtResource("1_customer")
+display_name = "Başörtülü Teyze"
+role = "Mahallenin Teyzesi"
+texture = ExtResource("2_texture")
+accent = Color(0.3098, 0.6039, 0.4196, 1)
+greeting = "Oğlum, torunumun bilgisayarı bu, bir bakıver."
+thanks_line = "Allah razı olsun yavrum, torunum çok sevinecek."

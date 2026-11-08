@@ -23,6 +23,9 @@ Proje dizin yapısı ve açıklamaları:
 - `src/scenes/main/` — Ana oyun sahnesi (montaj masası)
 - `src/resources/ScenarioData.gd` + `data/scenarios/*.tres` — Dükkâna gelen işler (hazır takılı parçalar, envanter, arızalar).
   Yeni senaryo: `.tres` oluştur ve `GameManager.SCENARIOS` listesine ekle
+- `src/scenes/counter/` — Tezgâh (dükkânın ön yüzü): müşteri kapıdan girer, sıraya dizilir, arızayı anlatır; iş bitince yorum/yıldız/ödeme yapıp çıkar (`Counter`, `CustomerWalker`)
+- `src/resources/CustomerData.gd` + `data/customers/*.tres` — Müşteri karakterleri (ad, tip, SVG görsel `assets/characters/`, isim rengi, selam ve teşekkür sözü).
+  Kariyerde günün her işine `CareerManager._assign_customers()` ile bir karakter atanır
 - `src/scenes/workbench/` — Montaj masası (Motherboard, MotherboardSlot)
 - Anakart modelleri: `src/resources/BoardData.gd` + `data/boards/*.tres` (ad, dönem, soket, RAM türü, renkler) ve
   yerleşim sahneleri (modern: `Motherboard.tscn`, diğerleri: `src/scenes/workbench/boards/*.tscn`). Kod (`Motherboard.gd`)
@@ -54,6 +57,10 @@ Proje dizin yapısı ve açıklamaları:
 
 ## Oyun Mekanikleri
 Oyun iki aşamalıdır:
+- **Kariyer akışı:** Tezgâh (müşteri yürüyerek gelir, şikâyetini söyler) → "Bilgisayarı Atölyeye Al" → atölye (tamir)
+  → BIOS başarılı → tezgâha dönülür, müşteri yorumunu, yıldızını ve ödemesini söyleyip kapıdan çıkar, sıradakiler ilerler
+  → günün son müşterisi gidince Gün Sonu Özeti (`ResultScreen`). Tezgâh görselleri ve yazı tipleri (Baloo 2, Nunito)
+  "Müşteri Karakterleri" tasarım dosyasından alındı (`assets/shop/`, `assets/fonts/`).
 - **1. Dükkân (Tamir):** Müşteriden hazır bir bilgisayar gelir (iş emri kartı). Oyuncu "Bilgisayarı Başlat" ile
   BIOS'ta arızayı teşhis eder, bozuk kabloyu fişine tıklayarak söker, envanterdeki yedeği takar ve tekrar başlatır.
   Bozuk kablo üzerinde yanık/kıvılcım görünür. Senaryo `random_broken_cable` ile her seferinde farklı kablo bozulabilir.

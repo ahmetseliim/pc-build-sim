@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="800" viewBox="0 0 240 320">
+<g stroke="#1E1A17" stroke-width="4" stroke-linejoin="round" stroke-linecap="round">
+<ellipse cx="60" cy="98" rx="8" ry="13" fill="#A86E4A"></ellipse>
+<ellipse cx="184" cy="98" rx="8" ry="13" fill="#A86E4A"></ellipse>
+<path d="M62 70 Q58 40 122 38 Q186 40 184 72 Q188 120 172 150 Q160 168 154 182 L152 250 L90 250 L88 184 Q74 166 66 142 Q56 110 62 70 Z" fill="#C98B62"></path>
+<path d="M18 320 Q22 236 88 214 Q121 240 154 214 Q218 236 222 320 Z" fill="#E9E1D3"></path>
+<path d="M18 320 Q22 236 80 218 L104 320 Z" fill="#5E6B48"></path>
+<path d="M222 320 Q218 236 162 218 L138 320 Z" fill="#5E6B48"></path>
+<path d="M90 50 Q104 43 118 45" fill="none" stroke="#FFFFFF" stroke-width="5"></path>
+<g fill="none" stroke="#9A9A9A" stroke-width="2.5">
+<path d="M62 92 C50 86 50 72 58 74 C52 62 64 58 66 68"></path>
+<path d="M64 84 C56 80 58 70 64 72"></path>
+<path d="M182 92 C194 86 194 72 186 74 C192 62 180 58 178 68"></path>
+<path d="M180 84 C188 80 186 70 180 72"></path>
+</g>
+<path d="M70 126 Q76 178 122 188 Q168 178 174 126 Q162 146 148 142 Q124 156 96 142 Q82 146 70 126 Z" fill="#C9C6C0"></path>
+<path d="M80 150 L80 168 M92 160 L92 178 M104 164 L104 184 M140 164 L140 184 M152 160 L152 178 M164 150 L164 168" fill="none" stroke="#8E8A84" stroke-width="2"></path>
+<path d="M86 74 Q96 66 108 70" fill="none" stroke="#9A9A9A" stroke-width="5" stroke-dasharray="3 2"></path>
+<path d="M136 70 Q148 66 158 74" fill="none" stroke="#9A9A9A" stroke-width="5" stroke-dasharray="3 2"></path>
+<rect x="88" y="74" width="28" height="20" rx="6" fill="#FFFFFF" fill-opacity="0.5" stroke-width="3"></rect>
+<rect x="128" y="74" width="28" height="20" rx="6" fill="#FFFFFF" fill-opacity="0.5" stroke-width="3"></rect>
+<path d="M116 82 L128 82" fill="none" stroke-width="3"></path>
+<circle cx="102" cy="84" r="1.8" fill="#1E1A17" stroke="none"></circle>
+<circle cx="142" cy="84" r="1.8" fill="#1E1A17" stroke="none"></circle>
+<path d="M124 98 L127 120 Q127 128 117 130" fill="none"></path>
+<path d="M108 117 Q103 118 106 123 L112 122" fill="none" stroke-width="3"></path>
+<circle cx="134" cy="121" r="1.6" fill="#1E1A17" stroke="none"></circle>
+<path d="M92 140 Q108 128 122 136 Q136 128 152 140" fill="none" stroke="#9A9A9A" stroke-width="9" stroke-dasharray="2 1.5"></path>
+<path d="M110 154 Q122 160 134 154" fill="none" stroke-width="3"></path>
+</g>
+</svg>

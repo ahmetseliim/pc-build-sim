@@ -76,7 +76,8 @@ func _show_order_card() -> void:
 	var stage: String = "1. DÜKKÂN · TAMİR" if scenario.shop_stage == 1 else "2. DÜKKÂN · MONTAJ"
 	header_label.text = "İŞ EMRİ  ·  " + stage
 	title_label.text = scenario.title
-	customer_label.text = "Müşteri: " + scenario.customer
+	var customer: CustomerData = CareerManager.current_customer() if CareerManager.is_career else null
+	customer_label.text = "Müşteri: " + (customer.display_name if customer else scenario.customer)
 	var board: BoardData = GameManager.current_board
 	if board:
 		customer_label.text += "   ·   Bilgisayar: %s, %s" % [board.display_name, board.era]

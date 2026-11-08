@@ -56,6 +56,26 @@ static func ui_font(bold: bool = true, spacing: int = 0) -> Font:
 	_fonts[key] = result
 	return result
 
+# Dükkân (tezgâh) ekranının yazı tipleri: başlıklar Baloo 2, metinler Nunito.
+# Google Fonts dosyaları latin ve latin-ext olarak ikiye bölünmüş; Türkçe harfler
+# için ikincisi yedek (fallback) olarak eklenir. Dosyalar değişken kalınlıklıdır (wght).
+static func shop_font(display: bool, weight: int = 800) -> Font:
+	var key: String = "shop_%d_%d" % [int(display), weight]
+	if _fonts.has(key):
+		return _fonts[key]
+	var family: String = "Baloo2" if display else "Nunito"
+	var variation: FontVariation = _weighted(load("res://assets/fonts/%sLatin.woff2" % family), weight)
+	# Yedek yazı tipine de aynı kalınlık verilmeli; yoksa ş, ğ, İ ince görünür
+	variation.fallbacks = [_weighted(load("res://assets/fonts/%sLatinExt.woff2" % family), weight)]
+	_fonts[key] = variation
+	return variation
+
+static func _weighted(font: Font, weight: int) -> FontVariation:
+	var variation: FontVariation = FontVariation.new()
+	variation.base_font = font
+	variation.variation_opentype = {TextServerManager.get_primary_interface().name_to_tag("wght"): weight}
+	return variation
+
 # BIOS ekranı için eş aralıklı yazı tipi
 static func mono_font() -> Font:
 	if _fonts.has("mono"):

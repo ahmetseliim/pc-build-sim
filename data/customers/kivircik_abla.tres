@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="CustomerData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://src/resources/CustomerData.gd" id="1_customer"]
+[ext_resource type="Texture2D" path="res://assets/characters/kivircik_abla.svg" id="2_texture"]
+
+[resource]
+script = ExtResource("1_customer")
+display_name = "Kıvırcık Abla"
+role = "Youtuber"
+texture = ExtResource("2_texture")
+accent = Color(0.8824, 0.6588, 0.2275, 1)
+greeting = "Selaam! Bugünkü videoya seni de çekeyim mi?"
+thanks_line = "Harikasın! Videoda dükkânı da etiketleyeceğim."

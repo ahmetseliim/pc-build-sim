@@ -1,9 +1,9 @@
 class_name ResultScreen
 extends Control
 
-# İş sonucu ve gün sonu ekranı
-# Önce biten işin ödemesini (ücret, hata kesintileri, yıldız) gösterir.
-# Gün bittiyse "Gün Sonu Özeti"ne, değilse sıradaki müşteriye geçer.
+# Gün sonu özeti ekranı
+# Her işin ödemesi tezgâhta müşteriyle gösterilir (Counter); günün son müşterisi
+# çıkınca bu ekran günün kazancını ve dükkân itibarını özetler.
 
 @onready var panel: PanelContainer = $Center/Panel
 @onready var box: VBoxContainer = $Center/Panel/VBox
@@ -13,7 +13,7 @@ func _ready() -> void:
 	var style: StyleBoxFlat = UIStyle.box(Color("#1c1210"), 14, 2, Color("#e2b083"), Color(0, 0, 0, 0.6), 16, Vector2(0, 10))
 	style.set_content_margin_all(32)
 	panel.add_theme_stylebox_override("panel", style)
-	_show_job_result()
+	_show_day_summary()
 
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_RESIZED:
@@ -21,34 +21,6 @@ func _notification(what: int) -> void:
 
 func _draw() -> void:
 	UIStyle.draw_wood(self, Rect2(Vector2.ZERO, size))
-
-func _show_job_result() -> void:
-	_clear()
-	var r: Dictionary = CareerManager.last_result
-	_label("GÜN %d  ·  İŞ TESLİM EDİLDİ" % CareerManager.day, 12, Color("#e2b083"), true)
-	_label(str(r.get("title", "")), 26, Color.WHITE, true)
-	_label("Müşteri: %s" % r.get("customer", ""), 14, Color("#cbd5e1"), true)
-	_spacer(6)
-	_stars(int(r.get("stars", 0)))
-	_spacer(6)
-	_row("İş ücreti", "%d ₺" % int(r.get("price", 0)), Color.WHITE)
-	var mistakes: Dictionary = r.get("mistakes", {})
-	if mistakes.is_empty():
-		_row("Hatasız iş!", "", Color("#34d399"))
-	else:
-		for kind: String in mistakes:
-			var count: int = mistakes[kind]
-			var label: String = CareerManager.MISTAKE_NAMES.get(kind, kind)
-			_row("%s × %d" % [label, count], "-%d%%" % int(count * CareerManager.MISTAKE_PENALTY * 100), Color("#f87171"))
-	_divider()
-	_row("Ödenen", "%d ₺" % int(r.get("pay", 0)), Color("#fbbf24"), 20)
-	_row("Kasa", "%d ₺" % CareerManager.money, Color("#cbd5e1"))
-	_spacer(10)
-	if r.get("day_done", false):
-		_button("Gün Sonu Özeti ▶", _show_day_summary)
-	else:
-		_button("Sıradaki Müşteri ▶", CareerManager.start_current_job)
-	_button("Menüye Dön", GameManager.go_to_menu, true)
 
 func _show_day_summary() -> void:
 	_clear()
@@ -95,13 +67,6 @@ func _row(left: String, right: String, color: Color, size: int = 15) -> void:
 		label.add_theme_color_override("font_color", color)
 		row.add_child(label)
 	box.add_child(row)
-
-func _stars(count: int) -> void:
-	var text: String = ""
-	for i: int in range(CareerManager.MAX_STARS):
-		text += "★" if i < count else "☆"
-	var label: Label = _label(text, 34, Color("#fbbf24"), true)
-	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 
 func _divider() -> void:
 	var line: ColorRect = ColorRect.new()

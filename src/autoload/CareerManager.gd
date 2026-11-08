@@ -2,11 +2,14 @@ extends Node
 
 # Kariyer Yöneticisi (CareerManager)
 # Dükkânın parasını, itibarını (yıldız), gün düzenini ve kaydı yönetir.
-# Her gün sırayla müşteriler (tamir işleri) gelir; iş bitince ücret hatalara göre
-# hesaplanır, sonuç ekranı gösterilir ve oyun otomatik kaydedilir.
+# Her gün sırayla müşteriler (tamir işleri) gelir: müşteri kapıdan girip tezgâha
+# yürür ve arızayı anlatır, sonra atölyeye geçilir. İş bitince ücret hatalara göre
+# hesaplanır, müşteri tezgâhta yorumunu ve ödemesini yapıp çıkar; oyun otomatik kaydedilir.
 
 const SAVE_PATH: String = "user://kariyer.json"
-const RESULT_SCENE: String = "res://src/scenes/ui/ResultScreen.tscn"
+const RESULT_SCENE: String = "res://src/scenes/ui/ResultScreen.tscn" ## Gün sonu özeti
+const COUNTER_SCENE: String = "res://src/scenes/counter/Counter.tscn"
+const CUSTOMERS_DIR: String = "res://data/customers/"
 
 const MISTAKE_PENALTY: float = 0.10 ## Her hata ücretten %10 keser
 const MIN_PAY_RATIO: float = 0.5 ## Ücretin en az yarısı ödenir
@@ -43,6 +46,7 @@ var money: int = 0
 var day: int = 1
 var job_index: int = 0 ## Günün kaçıncı müşterisi (0'dan)
 var day_queue: Array[String] = []
+var day_customers: Array[String] = [] ## day_queue'daki her işi getiren müşteri (data/customers/*.tres)
 var jobs_done: int = 0
 var star_total: int = 0
 var day_earned: int = 0
@@ -53,6 +57,8 @@ var day_jobs: int = 0
 var mistakes: Dictionary = {} ## hata türü -> adet
 var failed_boots: int = 0
 var last_result: Dictionary = {}
+## Tezgâh sahnesi açılınca ne olacak: "arrive" (sıradaki müşteri gelir) / "farewell" (biten işin müşterisi ödeyip gider)
+var counter_mode: String = "arrive"
 
 func _ready() -> void:
 	EventBus.warning_requested.connect(func(_m: String) -> void: record_mistake("sequence"))
@@ -83,10 +89,31 @@ func continue_game() -> void:
 	else:
 		start_current_job()
 
+# Sıradaki müşteri tezgâha gelir (arızayı anlatınca atölyeye geçilir)
 func start_current_job() -> void:
+	is_career = true
+	counter_mode = "arrive"
+	get_tree().change_scene_to_file(COUNTER_SCENE)
+
+# Tezgâhta arıza dinlendi: bilgisayar atölyeye alınır
+func enter_workshop() -> void:
 	is_career = true
 	_reset_job()
 	GameManager.start_scenario(load(day_queue[job_index]))
+
+func show_day_summary() -> void:
+	get_tree().change_scene_to_file(RESULT_SCENE)
+
+func current_scenario() -> ScenarioData:
+	return load(day_queue[job_index]) if job_index < day_queue.size() else null
+
+func customer_at(index: int) -> CustomerData:
+	if index < 0 or index >= day_customers.size():
+		return null
+	return load(day_customers[index])
+
+func current_customer() -> CustomerData:
+	return customer_at(job_index)
 
 # Test listesinden tek bir iş (kariyeri etkilemez)
 func start_test(scenario: ScenarioData) -> void:
@@ -100,7 +127,7 @@ func start_next_day() -> void:
 	save_game()
 	start_current_job()
 
-# BIOS başarılı: ücreti hesapla, kaydet ve sonuç ekranına geç
+# BIOS başarılı: ücreti hesapla, kaydet ve tezgâha dön (müşteri ödeyip gider)
 func finish_job() -> void:
 	job_active = false
 	var scenario: ScenarioData = GameManager.current_scenario
@@ -115,15 +142,18 @@ func finish_job() -> void:
 	day_earned += pay
 	day_star_total += stars
 	day_jobs += 1
-	job_index += 1
+	var customer: CustomerData = current_customer()
 	last_result = {
-		"title": scenario.title, "customer": scenario.customer,
+		"title": scenario.title, "customer": customer.display_name if customer else scenario.customer,
+		"customer_index": job_index,
 		"price": price, "pay": pay, "stars": stars, "mistakes": mistakes.duplicate(),
-		"day_done": job_index >= day_queue.size(),
+		"day_done": job_index + 1 >= day_queue.size(),
 	}
+	job_index += 1
 	save_game()
 	EventBus.career_updated.emit()
-	get_tree().change_scene_to_file(RESULT_SCENE)
+	counter_mode = "farewell"
+	get_tree().change_scene_to_file(COUNTER_SCENE)
 
 # --- Hatalar -----------------------------------------------------------------
 
@@ -167,6 +197,7 @@ func _begin_day() -> void:
 	if day <= PLANNED_DAYS.size():
 		for path: String in PLANNED_DAYS[day - 1]:
 			day_queue.append(path)
+		_assign_customers()
 		return
 	var count: int = 3 if day < 5 else 4
 	var last: String = ""
@@ -174,12 +205,27 @@ func _begin_day() -> void:
 		var options: Array = CAREER_POOL.filter(func(p: String) -> bool: return p != last)
 		last = options.pick_random()
 		day_queue.append(last)
+	_assign_customers()
+
+# Günün her işine farklı bir müşteri karakteri atanır
+func _assign_customers() -> void:
+	day_customers.clear()
+	var pool: Array[String] = []
+	for file: String in DirAccess.get_files_at(CUSTOMERS_DIR):
+		# Dışa aktarılmış oyunda dosyalar ".remap" uzantılı listelenir
+		file = file.trim_suffix(".remap")
+		if file.ends_with(".tres"):
+			pool.append(CUSTOMERS_DIR + file)
+	pool.shuffle()
+	for i: int in range(day_queue.size()):
+		day_customers.append(pool[i % pool.size()])
 
 # --- Kayıt -------------------------------------------------------------------
 
 func save_game() -> void:
 	var data: Dictionary = {
 		"money": money, "day": day, "job_index": job_index, "day_queue": day_queue,
+		"day_customers": day_customers,
 		"jobs_done": jobs_done, "star_total": star_total,
 		"day_earned": day_earned, "day_star_total": day_star_total, "day_jobs": day_jobs,
 	}
@@ -202,6 +248,12 @@ func load_game() -> bool:
 	day_queue.clear()
 	for path: Variant in data.get("day_queue", []):
 		day_queue.append(str(path))
+	day_customers.clear()
+	for path: Variant in data.get("day_customers", []):
+		if ResourceLoader.exists(str(path)):
+			day_customers.append(str(path))
+	if day_customers.size() != day_queue.size():
+		_assign_customers()
 	jobs_done = int(data.get("jobs_done", 0))
 	star_total = int(data.get("star_total", 0))
 	day_earned = int(data.get("day_earned", 0))

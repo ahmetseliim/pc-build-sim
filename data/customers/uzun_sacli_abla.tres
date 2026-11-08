@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="CustomerData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://src/resources/CustomerData.gd" id="1_customer"]
+[ext_resource type="Texture2D" path="res://assets/characters/uzun_sacli_abla.svg" id="2_texture"]
+
+[resource]
+script = ExtResource("1_customer")
+display_name = "Uzun Saçlı Abla"
+role = "Grafik Tasarımcı"
+texture = ExtResource("2_texture")
+accent = Color(0.851, 0.3961, 0.2314, 1)
+greeting = "Merhaba, teslim tarihim yarın, yardım lazım!"
+thanks_line = "Hayat kurtardın! Projeyi yetiştiririm artık."
