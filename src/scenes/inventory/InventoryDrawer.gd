@@ -26,5 +26,14 @@ func _ready() -> void:
 		item.setup(part as ComponentData)
 		items.add_child(item)
 
+# Yan sütunda: panel kalan yüksekliği doldurur, başlık kısalır
+func use_side_layout() -> void:
+	size_flags_vertical = Control.SIZE_EXPAND_FILL
+	var panel: StyleBoxFlat = get_theme_stylebox("panel")
+	panel.content_margin_left = 12
+	panel.content_margin_right = 12
+	title_label.text = "ENVANTER"
+	title_label.add_theme_font_size_override("font_size", UIStyle.scaled(get_viewport(), 12))
+
 func _on_part_return_requested(part: Control) -> void:
 	(part as PartItem).return_to(items)

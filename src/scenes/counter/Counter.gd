@@ -24,7 +24,6 @@ const ENTER_DELAY: float = 0.9 ## Gün başında müşterilerin kapıdan giriş 
 const TYPE_SPEED: float = 55.0 ## Konuşma balonunda harf/sn
 
 ## Kariyer modunda boş şikâyetli (rastgele kablo arızalı) işler için genel şikâyet
-const GENERIC_COMPLAINT: String = "Bilgisayar çalışırken birden kapandı, kasadan da yanık kokusu geldi. O günden beri düzgün açılmıyor."
 
 ## Yıldıza göre genel yorumlar (5 yıldızda müşterinin kendi sözü kullanılır)
 const REVIEWS: Dictionary = {
@@ -172,6 +171,7 @@ func _spawn(index: int, pos: Vector2, s: float) -> CustomerWalker:
 # --- Müşteri gelişi -----------------------------------------------------------
 
 func _setup_arrival() -> void:
+	AudioManager.play_sfx("bell")
 	var first: int = CareerManager.job_index
 	var day_start: bool = first == 0
 	_at_counter = _spawn(first, DOOR_POS, DOOR_SCALE)
@@ -193,8 +193,9 @@ func _setup_arrival() -> void:
 func _on_customer_at_counter() -> void:
 	_update_hud()
 	var customer: CustomerData = _at_counter.data
-	var scenario: ScenarioData = CareerManager.current_scenario()
-	var complaint: String = scenario.complaint if scenario.complaint != "" else GENERIC_COMPLAINT
+	# Arıza burada belirlenir: müşterinin anlattığı ile iş emrindeki aynı olur
+	GameManager.prepare_job(CareerManager.current_scenario())
+	var complaint: String = GameManager.get_complaint()
 	var text: String = complaint if customer.greeting == "" else customer.greeting + " " + complaint
 	_say(customer, text, _offer_workshop)
 
@@ -247,6 +248,7 @@ func _show_payment(r: Dictionary) -> void:
 	_extras.visible = true
 	# Para kasaya sayarak girer (_process); şimdiye kadar eski değerde bekliyordu
 	_counting = true
+	AudioManager.play_sfx("coin")
 	_show_action("Güle güle!  ▶", _send_off)
 
 # Müşteri kapıdan çıkar, sıradakiler ilerler
@@ -314,15 +316,16 @@ func _hide_bubble() -> void:
 func _layout_bubble() -> void:
 	if _bubble == null or not _bubble.visible:
 		return
-	var width: float = minf(size.x - 32.0, 700.0)
+	var ui_zoom: float = UIStyle.ui_scale(get_viewport())
+	var width: float = minf(size.x - 32.0, 700.0 * ui_zoom)
 	_bubble.custom_minimum_size.x = width
 	_bubble.size = Vector2(width, 0)
 	var head: Vector2 = _head_screen_pos()
-	var top: float = 104.0
+	var top: float = 92.0 if ui_zoom > 1.0 else 104.0
 	var x: float = clampf(head.x - width * 0.45, 16.0, size.x - width - 16.0)
 	_bubble.position = Vector2(x, top)
 	_bubble.pivot_offset = Vector2(width / 2.0, _bubble.size.y)
-	_name_tag.position = _bubble.position + Vector2(22, -24)
+	_name_tag.position = _bubble.position + Vector2(22, -24.0 * ui_zoom)
 	ui.queue_redraw()
 
 func _head_screen_pos() -> Vector2:
@@ -358,8 +361,8 @@ func _build_ui() -> void:
 	top.add_theme_constant_override("separation", 12)
 	top.anchor_left = 1.0
 	top.anchor_right = 1.0
-	top.offset_left = -18
-	top.offset_right = -18
+	top.offset_left = -18.0 - UIStyle.safe_side()
+	top.offset_right = -18.0 - UIStyle.safe_side()
 	top.offset_top = 18
 	top.grow_horizontal = Control.GROW_DIRECTION_BEGIN
 	ui.add_child(top)
@@ -386,7 +389,7 @@ func _build_ui() -> void:
 
 	# Sol üst: menü
 	var menu_button: Button = _shop_button("◀ Menü", 18, 46)
-	menu_button.position = Vector2(16, 18)
+	menu_button.position = Vector2(16.0 + UIStyle.safe_side(), 18.0)
 	menu_button.pressed.connect(GameManager.go_to_menu)
 	ui.add_child(menu_button)
 
@@ -396,10 +399,17 @@ func _build_ui() -> void:
 	queue_pill.add_child(_queue_label)
 	queue_pill.anchor_left = 1.0
 	queue_pill.anchor_right = 1.0
-	queue_pill.offset_left = -18
-	queue_pill.offset_right = -18
-	queue_pill.offset_top = 82
+	queue_pill.offset_left = -18.0 - UIStyle.safe_side()
+	queue_pill.offset_right = -18.0 - UIStyle.safe_side()
+	queue_pill.offset_top = 82.0 * UIStyle.ui_scale(get_viewport())
 	queue_pill.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	if UIStyle.is_compact():
+		# Yatay telefonda balonla çakışmasın diye menünün altına
+		queue_pill.anchor_left = 0.0
+		queue_pill.anchor_right = 0.0
+		queue_pill.offset_left = 16.0 + UIStyle.safe_side()
+		queue_pill.offset_right = 16.0 + UIStyle.safe_side()
+		queue_pill.grow_horizontal = Control.GROW_DIRECTION_END
 	ui.add_child(queue_pill)
 
 	# Konuşma balonu
@@ -448,11 +458,12 @@ func _build_ui() -> void:
 
 	# Alt: eylem butonu (tezgâhın üstünde)
 	_action_button = _shop_button("", 26, 72)
+	var action_height: float = _action_button.custom_minimum_size.y
 	_action_button.anchor_left = 0.5
 	_action_button.anchor_right = 0.5
 	_action_button.anchor_top = 1.0
 	_action_button.anchor_bottom = 1.0
-	_action_button.offset_top = -36 - 72
+	_action_button.offset_top = -36.0 - action_height
 	_action_button.offset_bottom = -36
 	_action_button.visible = false
 	ui.add_child(_action_button)
@@ -494,6 +505,7 @@ func _format_money(value: int) -> String:
 	return ("-" if value < 0 else "") + digits + out
 
 func _make_label(text: String, font_size: int, color: Color, display: bool) -> Label:
+	font_size = UIStyle.scaled(get_viewport(), font_size)
 	var label: Label = Label.new()
 	label.text = text
 	label.add_theme_font_override("font", UIStyle.shop_font(display, 800))
@@ -523,6 +535,8 @@ func _dark_pill(radius: int = 14) -> PanelContainer:
 
 # Tasarımdaki krem renkli, kalın çerçeveli, sert gölgeli buton
 func _shop_button(text: String, font_size: int, height: float) -> Button:
+	font_size = UIStyle.scaled(get_viewport(), font_size)
+	height *= UIStyle.ui_scale(get_viewport())
 	var button: Button = Button.new()
 	button.text = text
 	button.custom_minimum_size = Vector2(0, height)

@@ -55,6 +55,7 @@ var latch_flash: float = 0.0:
 		queue_redraw()
 
 var _latch_buttons: Array[Control] = []
+var _number_tag: Label = null ## Dolu RAM yuvasında "BIOS'taki RAM 2" hangisi görünsün
 
 signal slot_filled(slot: MotherboardSlot)
 signal latch_toggled(slot: MotherboardSlot)
@@ -64,6 +65,7 @@ func _ready() -> void:
 	set_process(false)
 	if accepted_type == "ram":
 		_create_latch_buttons()
+		_create_number_tag()
 
 func _process(delta: float) -> void:
 	_hint_time += delta
@@ -73,8 +75,10 @@ func _process(delta: float) -> void:
 func _create_latch_buttons() -> void:
 	for i: int in range(2):
 		var button: Control = Control.new()
-		button.size = Vector2(24, 16)
-		button.position = Vector2(size.x / 2.0 - 12.0, -13.0 if i == 0 else size.y - 3.0)
+		var compact: bool = UIStyle.ui_scale(get_viewport()) > 1.0
+		button.size = Vector2(60, 46) if compact else Vector2(24, 16)
+		var outside: float = button.size.y - 3.0
+		button.position = Vector2((size.x - button.size.x) / 2.0, -outside if i == 0 else size.y - 3.0)
 		button.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 		button.tooltip_text = "Mandalı aç / kapat"
@@ -82,11 +86,28 @@ func _create_latch_buttons() -> void:
 		add_child(button)
 		_latch_buttons.append(button)
 
+func _create_number_tag() -> void:
+	_number_tag = Label.new()
+	_number_tag.text = slot_label.get_slice(" ", 1)
+	var ui: float = UIStyle.ui_scale(get_viewport())
+	_number_tag.add_theme_font_override("font", UIStyle.ui_font(true))
+	_number_tag.add_theme_font_size_override("font_size", roundi(15.0 * ui))
+	_number_tag.add_theme_color_override("font_color", Color("#0f172a"))
+	_number_tag.add_theme_stylebox_override("normal", UIStyle.box(Color("#fbbf24"), 6))
+	_number_tag.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_number_tag.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_number_tag.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_number_tag.size = Vector2(24, 24) * ui
+	_number_tag.position = (size - _number_tag.size) / 2.0
+	_number_tag.visible = false
+	add_child(_number_tag)
+
 func _on_latch_input(event: InputEvent, index: int) -> void:
 	var mb: InputEventMouseButton = event as InputEventMouseButton
 	if mb and mb.button_index == MOUSE_BUTTON_LEFT and mb.pressed:
 		_latch_buttons[index].accept_event()
 		set_latch(index, not latch_state[index])
+		AudioManager.play_sfx("latch")
 		latch_toggled.emit(self)
 
 func set_latch(index: int, open: bool, animate: bool = true) -> void:
@@ -123,6 +144,8 @@ func install(part: PartItem, animate: bool = true) -> void:
 	for i: int in range(2):
 		if latch_state[i]:
 			set_latch(i, false, animate)
+	if _number_tag:
+		_number_tag.visible = true
 	InventoryManager.remove_part(part.data)
 	slot_filled.emit(self)
 	EventBus.part_installed.emit(slot_id, part.data)
@@ -134,6 +157,8 @@ func uninstall() -> void:
 	var removed: ComponentData = installed_part
 	is_occupied = false
 	installed_part = null
+	if _number_tag:
+		_number_tag.visible = false
 	queue_redraw()
 	EventBus.part_removed.emit(slot_id, removed)
 
@@ -168,11 +193,12 @@ func _draw() -> void:
 # RAM yuvasının iki ucundaki kilit mandalları; açılınca dışa doğru yatar
 func _draw_latches() -> void:
 	var blink: float = latch_flash * (0.5 + 0.5 * sin(latch_flash * 30.0))
+	var zoom: float = 1.7 if UIStyle.ui_scale(get_viewport()) > 1.0 else 1.0
 	for i: int in range(2):
 		var side: float = -1.0 if i == 0 else 1.0
 		var amount: float = latch_amount[i]
 		var hinge: Vector2 = Vector2(size.x / 2.0, 0.0 if side < 0.0 else size.y)
-		draw_set_transform(hinge, side * amount * 0.7)
+		draw_set_transform(hinge, side * amount * 0.7, Vector2(zoom, zoom))
 		var rect: Rect2 = Rect2(Vector2(-8, -8 if side < 0.0 else 1), Vector2(16, 7))
 		if blink > 0.01:
 			UIStyle.draw_rect_glow(self, rect, 8.0, Color(Color("#fbbf24"), blink))

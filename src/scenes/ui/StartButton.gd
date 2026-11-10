@@ -14,7 +14,7 @@ func _ready() -> void:
 		add_theme_stylebox_override(key, style)
 	add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 	add_theme_font_override("font", UIStyle.ui_font(true))
-	add_theme_font_size_override("font_size", 16)
+	add_theme_font_size_override("font_size", UIStyle.scaled(get_viewport(), 16))
 	for key: String in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color", "font_disabled_color"]:
 		add_theme_color_override(key, Color.WHITE)
 	focus_mode = Control.FOCUS_NONE

@@ -31,12 +31,16 @@ func can_unscrew() -> bool:
 # prelocked: hazır gelen bilgisayarda vidalar zaten sıkılıdır.
 func start(prelocked: bool = false) -> void:
 	screws_locked = 0
+	# Telefonda vida hem büyük görünür hem de dokunma alanı geniştir
+	var compact: bool = UIStyle.ui_scale(get_viewport()) > 1.0
+	var zoom: float = 1.6 if compact else 1.0
+	var visual_size: float = SCREW_SIZE * zoom
 	var positions: Array[Vector2] = []
 	if mode == "m2":
 		# M.2'nin ucundaki vida yuvası (kartın kenarına oturur)
-		positions = [Vector2(size.x - SCREW_SIZE / 2.0, (size.y - SCREW_SIZE) / 2.0)]
+		positions = [Vector2(size.x - visual_size / 2.0, (size.y - visual_size) / 2.0)]
 	else:
-		var far: Vector2 = size - Vector2.ONE * (SCREW_SIZE + SCREW_MARGIN)
+		var far: Vector2 = size - Vector2.ONE * (visual_size + SCREW_MARGIN)
 		positions = [
 			Vector2(SCREW_MARGIN, SCREW_MARGIN), # Sol üst
 			Vector2(far.x, SCREW_MARGIN),        # Sağ üst
@@ -48,6 +52,8 @@ func start(prelocked: bool = false) -> void:
 		var screw: ScrewNode = ScrewNode.new()
 		screw.position = positions[i]
 		screw.size = Vector2.ONE * SCREW_SIZE
+		screw.scale = Vector2(zoom, zoom)
+		screw.touch_padding = 10.0 if compact else 0.0
 		screw.screw_id = "screw_%d" % i
 		screw.screw_speed = screw_speed
 		if prelocked:
@@ -100,6 +106,7 @@ class ScrewNode extends Control:
 	var is_pressing: bool = false
 	var is_unscrewing: bool = false ## Sökme yönünde dönüyor
 	var is_removed: bool = false
+	var touch_padding: float = 0.0 ## Görünenin dışındaki dokunma payı
 	var flash: float = 0.0:
 		set(value):
 			flash = value
@@ -113,6 +120,9 @@ class ScrewNode extends Control:
 	func _can_unscrew() -> bool:
 		return get_parent().call("can_unscrew")
 
+	func _has_point(point: Vector2) -> bool:
+		return Rect2(Vector2.ZERO, size).grow(touch_padding).has_point(point)
+
 	func _gui_input(event: InputEvent) -> void:
 		if is_removed:
 			return
@@ -125,6 +135,10 @@ class ScrewNode extends Control:
 			is_locked = false
 			is_unscrewing = true
 		is_pressing = mb.pressed
+		if is_pressing:
+			AudioManager.start_loop("screw_loop")
+		else:
+			AudioManager.stop_loop()
 		accept_event()
 		queue_redraw()
 
@@ -144,6 +158,8 @@ class ScrewNode extends Control:
 	func _remove() -> void:
 		is_removed = true
 		is_pressing = false
+		AudioManager.stop_loop()
+		AudioManager.play_sfx("screw_done")
 		mouse_filter = Control.MOUSE_FILTER_IGNORE
 		var tween: Tween = create_tween()
 		tween.tween_property(self, "modulate:a", 0.0, 0.25)
@@ -153,6 +169,8 @@ class ScrewNode extends Control:
 	func _lock() -> void:
 		is_locked = true
 		is_pressing = false
+		AudioManager.stop_loop()
+		AudioManager.play_sfx("screw_done")
 		mouse_default_cursor_shape = Control.CURSOR_ARROW
 		flash = 1.0
 		create_tween().tween_property(self, "flash", 0.0, 0.6).set_ease(Tween.EASE_OUT)

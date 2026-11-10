@@ -47,7 +47,7 @@ func _ready() -> void:
 	test_button.text = "Test ▾"
 	test_button.flat = true
 	test_button.add_theme_font_override("font", UIStyle.ui_font(false))
-	test_button.add_theme_font_size_override("font_size", 11)
+	test_button.add_theme_font_size_override("font_size", UIStyle.scaled(get_viewport(), 11))
 	test_button.add_theme_color_override("font_color", Color(1, 1, 1, 0.35))
 	test_button.focus_mode = Control.FOCUS_NONE
 	test_button.size_flags_horizontal = Control.SIZE_SHRINK_END
@@ -56,6 +56,22 @@ func _ready() -> void:
 		test_button.text = "Test ▴" if list.visible else "Test ▾"
 	test_button.pressed.connect(toggle)
 	vbox.add_child(test_button)
+	vbox.add_child(_sound_button())
+
+# Ses aç/kapat (tercih kayıtlı kalır)
+func _sound_button() -> Button:
+	var button: Button = Button.new()
+	button.flat = true
+	button.text = "Ses: Kapalı" if AudioManager.muted else "Ses: Açık"
+	button.add_theme_font_override("font", UIStyle.ui_font(false))
+	button.add_theme_font_size_override("font_size", UIStyle.scaled(get_viewport(), 13))
+	button.add_theme_color_override("font_color", Color(1, 1, 1, 0.6))
+	button.focus_mode = Control.FOCUS_NONE
+	button.size_flags_horizontal = Control.SIZE_SHRINK_END
+	button.pressed.connect(func() -> void:
+		AudioManager.set_muted(not AudioManager.muted)
+		button.text = "Ses: Kapalı" if AudioManager.muted else "Ses: Açık")
+	return button
 
 # Kayıt varsa ikinci basışta onay ister
 func _on_new_game() -> void:
@@ -68,7 +84,7 @@ func _on_new_game() -> void:
 func _big_button(text: String, color: Color, action: Callable) -> Button:
 	var button: Button = Button.new()
 	button.text = text
-	button.custom_minimum_size = Vector2(560, 0)
+	button.custom_minimum_size = Vector2(560.0 * UIStyle.ui_scale(get_viewport()), 0)
 	var normal: StyleBoxFlat = UIStyle.box(color, 10)
 	normal.set_content_margin_all(14)
 	var hover: StyleBoxFlat = normal.duplicate()
@@ -78,7 +94,7 @@ func _big_button(text: String, color: Color, action: Callable) -> Button:
 	button.add_theme_stylebox_override("pressed", hover)
 	button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 	button.add_theme_font_override("font", UIStyle.ui_font(true))
-	button.add_theme_font_size_override("font_size", 20)
+	button.add_theme_font_size_override("font_size", UIStyle.scaled(get_viewport(), 20))
 	for key: String in ["font_color", "font_hover_color", "font_pressed_color"]:
 		button.add_theme_color_override(key, Color.WHITE)
 	button.focus_mode = Control.FOCUS_NONE
@@ -101,7 +117,7 @@ func _make_card(scenario: ScenarioData) -> Control:
 	style.border_color = accent
 	style.set_content_margin_all(18)
 	card.add_theme_stylebox_override("panel", style)
-	card.custom_minimum_size = Vector2(560, 0)
+	card.custom_minimum_size = Vector2(560.0 * UIStyle.ui_scale(get_viewport()), 0)
 
 	var row: HBoxContainer = HBoxContainer.new()
 	row.add_theme_constant_override("separation", 18)
@@ -143,7 +159,7 @@ func _make_card(scenario: ScenarioData) -> Control:
 	play.add_theme_stylebox_override("pressed", hover)
 	play.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 	play.add_theme_font_override("font", UIStyle.ui_font(true))
-	play.add_theme_font_size_override("font_size", 15)
+	play.add_theme_font_size_override("font_size", UIStyle.scaled(get_viewport(), 15))
 	for key: String in ["font_color", "font_hover_color", "font_pressed_color"]:
 		play.add_theme_color_override(key, Color.WHITE)
 	play.focus_mode = Control.FOCUS_NONE
@@ -154,5 +170,5 @@ func _make_card(scenario: ScenarioData) -> Control:
 
 func _label(label: Label, size: int, color: Color, bold: bool, spacing: int = 0) -> void:
 	label.add_theme_font_override("font", UIStyle.ui_font(bold, spacing))
-	label.add_theme_font_size_override("font_size", size)
+	label.add_theme_font_size_override("font_size", UIStyle.scaled(get_viewport(), size))
 	label.add_theme_color_override("font_color", color)

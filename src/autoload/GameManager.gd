@@ -42,8 +42,12 @@ var fan_mounted: bool = false
 var paste_old: bool = false ## İşlemcideki macun kurumuş (temizlenip yenilenmeli)
 var m2_secured: bool = true ## M.2 SSD vidasıyla sabitlendi mi (vidalı senaryolarda)
 var build_complete: bool = false
+var random_cable_pick: String = "" ## Tezgâhta seçilen rastgele bozuk kablo
+var _job_prepared: bool = false
 
 func _ready() -> void:
+	UIStyle.setup_window(get_window())
+	get_tree().quit_on_go_back = false
 	# EventBus sinyallerine bağlanma
 	EventBus.part_installed.connect(_on_part_installed)
 	EventBus.part_removed.connect(_on_part_removed)
@@ -54,15 +58,54 @@ func _ready() -> void:
 
 # Senaryoyu hazırlar ve oyun sahnesine geçer
 func start_scenario(scenario: ScenarioData) -> void:
-	_prepare(scenario)
+	if not (_job_prepared and current_scenario == scenario):
+		_prepare(scenario)
+	_job_prepared = false
 	InventoryManager.setup(scenario_inventory)
 	get_tree().change_scene_to_file(GAME_SCENE)
 
 func go_to_menu() -> void:
 	get_tree().change_scene_to_file(MENU_SCENE)
 
+# Android geri tuşu: menüde oyundan çıkar, başka ekranda menüye döner
+func _notification(what: int) -> void:
+	if what != NOTIFICATION_WM_GO_BACK_REQUEST:
+		return
+	var scene: Node = get_tree().current_scene
+	if scene and scene.scene_file_path == MENU_SCENE:
+		get_tree().quit()
+	else:
+		go_to_menu()
+
+# Müşteri tezgâha gelince işi önceden belirler: anlattığı şikâyet ile atölyedeki arıza aynı olur
+func prepare_job(scenario: ScenarioData) -> void:
+	_prepare(scenario)
+	_job_prepared = true
+	board_slot_types = _slot_types_of(current_board)
+	if not scenario.random_broken_cable:
+		return
+	var candidates: Array[String] = []
+	for type: String in scenario.preinstalled_parts:
+		if type in CABLE_TYPES and type in board_slot_types and not type in candidates:
+			candidates.append(type)
+	if not candidates.is_empty():
+		random_cable_pick = candidates.pick_random()
+		scenario_broken.append(random_cable_pick)
+
+# Anakart sahnesindeki yuva türleri
+func _slot_types_of(board: BoardData) -> Array[String]:
+	var types: Array[String] = []
+	var scene: PackedScene = load(board.scene_path)
+	var root: Node = scene.instantiate()
+	for child: Node in root.get_node("Slots").get_children():
+		if child is MotherboardSlot and not (child as MotherboardSlot).accepted_type in types:
+			types.append((child as MotherboardSlot).accepted_type)
+	root.free()
+	return types
+
 func _prepare(scenario: ScenarioData) -> void:
 	reset_build()
+	random_cable_pick = ""
 	current_scenario = scenario
 	# Bu işte gelen bilgisayarın anakartı (uygun olanlardan rastgele)
 	var board_path: String = DEFAULT_BOARD if scenario.board_paths.is_empty() else scenario.board_paths.pick_random()

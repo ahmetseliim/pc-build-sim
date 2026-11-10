@@ -33,6 +33,11 @@ func setup(part_data: ComponentData) -> void:
 		EventBus.bios_boot_started.connect(_on_boot_started)
 		EventBus.boot_failed.connect(_on_boot_failed)
 
+# Küçük fişlerin dokunma alanı görünenden büyüktür
+func _has_point(point: Vector2) -> bool:
+	var pad: float = 16.0 if is_placed and is_broken and UIStyle.ui_scale(get_viewport()) > 1.0 else 0.0
+	return Rect2(Vector2.ZERO, size).grow(pad).has_point(point)
+
 func _gui_input(event: InputEvent) -> void:
 	var mb: InputEventMouseButton = event as InputEventMouseButton
 	if is_placed:

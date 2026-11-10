@@ -5,7 +5,7 @@ Bu dosya, AI kodlama asistanlarının (Antigravity, Cursor, Copilot vb.) projeyi
 ## Proje Özeti
 - **PC Build Simulator**: Sürükle-bırak mekanizmasıyla bilgisayar parçalarını anakarta yerleştiren bir 2D mobil simülasyon oyunu
 - **Motor**: Godot 4.3, GDScript
-- **Hedef Platformlar**: Android, iOS
+- **Hedef Platformlar**: Android, iOS (yatay ekran)
 - **İlham**: Good Pizza, Great Pizza tarzı simülasyon oyunları
 
 ## Mimari Kararlar
@@ -35,7 +35,8 @@ Proje dizin yapısı ve açıklamaları:
 - `src/autoload/CareerManager.gd` — Kariyer: para, itibar (yıldız), gün düzeni, hata sayımı ve kayıt (`user://kariyer.json`).
   İlk 3 gün `PLANNED_DAYS`, sonrası `CAREER_POOL`'dan rastgele (1. gün 2, sonra 3, 5. günden itibaren 4 müşteri).
   Ücret senaryonun `price` alanı; her hata -%10 ve -1 yıldız (en az %50 ücret, en az 1 yıldız). Hatalar: macun taşması,
-  sağlam parça sökme, ilk teşhisten sonraki her başarısız BIOS, uyarı çıkaran her sıra hatası. Her iş bitince otomatik kayıt.
+  sağlam parça sökme, ilk teşhisten sonraki her başarısız BIOS, parçaya zarar verecek sıra hataları (`Motherboard._reject(..., true)`). Yardım mesajları ceza kesmez.
+  Hatalar ve aktif iş kayda yazılır: menüye çıkıp dönmek hataları silmez. Kayıt önce geçici dosyaya yazılır, `version` alanı taşır.
   Menüdeki "Test" listesinden açılan işler kariyeri etkilemez (`is_career = false`).
 - `src/scenes/ui/ResultScreen.tscn` — İş sonucu (ödeme, hatalar, yıldız) ve gün sonu özeti
 - `src/scenes/inventory/` — Envanter çekmecesi
@@ -100,3 +101,4 @@ Montaj döngüsü:
 |-------|-------------|------------|
 | 2026-09-27 | Muhammed | Proje Godot 4'e taşındı. Temel yapı oluşturuldu. |
 | 2026-10-14 | Ahmet Selim | `index.html` prototipinin tasarımı ve oynanışı Godot'a birebir taşındı (mandal, macun, vida, kablolar, CMOS, uyarılar). |
+| 2026-11-10 | Claude | Aşama 1: ceza ve kayıt düzeltmeleri, tezgâh ile iş emrinde aynı şikâyet, RAM numarası, kodla üretilen sesler, telefon yatay düzeni (`UIStyle.is_compact`: anakart solda, envanter sağda), Android geri tuşu. |

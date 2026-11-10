@@ -9,11 +9,16 @@ const UI_FONT_NAMES: Array = ["Segoe UI", "Tahoma", "Geneva", "Verdana", "Roboto
 const MONO_FONT_NAMES: Array = ["Courier New", "Courier", "Liberation Mono", "monospace"]
 
 const BASE_SIZE: Vector2 = Vector2(1080, 1000) ## project.godot'taki tasarım çözünürlüğü
+const COMPACT_ASPECT: float = 1.55 ## Genişlik / yükseklik bu orandan büyükse telefon yatay düzeni
+const COMPACT_SCALE: float = 1.35 ## Telefon yatayda yazı ve buton büyütmesi
+const COMPACT_MIN_WIDTH: float = 1610.0 ## Anakart (960) + yan sütun (en geniş parça sığsın) + kenar payları
+const COMPACT_SIDE_MARGIN: float = 50.0 ## Yatay telefonda çentik payı
 const WOOD_LIGHT: Color = Color("#6d4c41")
 const WOOD_DARK: Color = Color("#5d4037")
 
 static var _fonts: Dictionary = {}
 static var _window_ready: bool = false
+static var _compact: bool = false
 
 # Varsayılan yazı tipini ayarlar ve masaüstünde pencereyi ekrana sığdırır (bir kez)
 static func setup_window(window: Window) -> void:
@@ -23,13 +28,40 @@ static func setup_window(window: Window) -> void:
 	var theme_res: Theme = Theme.new()
 	theme_res.default_font = ui_font(false)
 	window.get_tree().root.theme = theme_res
-	if not OS.has_feature("pc") or window.mode != Window.MODE_WINDOWED:
+	_setup_landscape_phone(window)
+	# Başka boyutta açıldıysa dokunma (--resolution ile telefon düzenini denemek için)
+	if not OS.has_feature("pc") or window.mode != Window.MODE_WINDOWED or window.size != Vector2i(BASE_SIZE):
 		return
 	var usable: Rect2i = DisplayServer.screen_get_usable_rect(window.current_screen)
 	var scale_factor: float = minf(1.0, minf(usable.size.x * 0.95 / BASE_SIZE.x, usable.size.y * 0.9 / BASE_SIZE.y))
 	var win_size: Vector2i = Vector2i(BASE_SIZE * scale_factor)
 	window.size = win_size
 	window.position = usable.position + (usable.size - win_size) / 2
+
+# Yatay telefonda tasarım alanı anakartın ekranı dolduracağı kadar küçültülür
+static func _setup_landscape_phone(window: Window) -> void:
+	var long_side: float = float(maxi(window.size.x, window.size.y))
+	var short_side: float = float(mini(window.size.x, window.size.y))
+	var aspect: float = long_side / short_side
+	if aspect < COMPACT_ASPECT or not (OS.has_feature("mobile") or short_side < 600.0):
+		return
+	_compact = true
+	var height: int = clampi(ceili(COMPACT_MIN_WIDTH / aspect), 620, 1000)
+	window.content_scale_size = Vector2i(ceili(height * aspect), height)
+
+static func is_compact() -> bool:
+	return _compact
+
+# Yatay telefon düzeninde arayüz büyütmesi, diğer ekranlarda 1
+static func ui_scale(_viewport: Viewport) -> float:
+	return COMPACT_SCALE if _compact else 1.0
+
+static func scaled(viewport: Viewport, font_size: int) -> int:
+	return roundi(font_size * ui_scale(viewport))
+
+# Ekran çentiği için yanlardan bırakılan pay
+static func safe_side() -> float:
+	return COMPACT_SIDE_MARGIN if _compact else 0.0
 
 # Ahşap masa arka planı: 20 px'lik dikey şeritler
 static func draw_wood(ci: CanvasItem, rect: Rect2) -> void:

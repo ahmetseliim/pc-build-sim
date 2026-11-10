@@ -136,8 +136,9 @@ func _preinstall_scenario_parts() -> void:
 			if board_has_slot(data.part_type) and not data.part_type in candidates:
 				candidates.append(data.part_type)
 		if not candidates.is_empty():
-			var pick: String = candidates.pick_random()
-			GameManager.scenario_broken.append(pick)
+			var pick: String = GameManager.random_cable_pick if GameManager.random_cable_pick in candidates else candidates.pick_random()
+			if not pick in GameManager.scenario_broken:
+				GameManager.scenario_broken.append(pick)
 			if scenario.spare_for_broken:
 				var spare: ComponentData = InventoryManager.create_part(pick)
 				spare.is_new = true
@@ -222,9 +223,9 @@ func _on_part_dropped(part_node: Control, global_point: Vector2) -> void:
 		if slot != cpu_socket:
 			_reject(part)
 		elif GameManager.paste_old:
-			_reject(part, "Önce fanı söküp eski macunu alkollü bezle temizlemelisin!")
+			_reject(part, "Önce fanı söküp eski macunu alkollü bezle temizlemelisin!", true)
 		elif GameManager.cpu_state != "locked_full":
-			_reject(part, "Önce işlemciyi takıp kilitlemelisin!")
+			_reject(part, "Önce işlemciyi takıp kilitlemelisin!", true)
 		else:
 			cpu_socket.start_paste(part)
 		return
@@ -236,7 +237,7 @@ func _on_part_dropped(part_node: Control, global_point: Vector2) -> void:
 		elif not GameManager.paste_old:
 			_reject(part, "Temizlenecek eski macun yok.")
 		elif GameManager.fan_mounted:
-			_reject(part, "Önce fanı sök (vidalarına basılı tut)!")
+			_reject(part, "Önce fanı sök (vidalarına basılı tut)!", true)
 		else:
 			cpu_socket.start_cleaning(part)
 		return
@@ -248,17 +249,18 @@ func _on_part_dropped(part_node: Control, global_point: Vector2) -> void:
 	match type:
 		"cpu":
 			if GameManager.cpu_state != "open":
-				_reject(part, "Önce soket mandalına tıklayarak kilidi açmalısın!")
+				_reject(part, "Önce soket mandalına tıklayarak kilidi açmalısın!", true)
 				return
 			GameManager.set_cpu_state("installed")
 		"fan":
 			if GameManager.cpu_state != "paste_applied":
-				_reject(part, "İşlemciye termal macun sürmeden fanı takamazsın!")
+				_reject(part, "İşlemciye termal macun sürmeden fanı takamazsın!", true)
 				return
 
 	var scenario: ScenarioData = GameManager.current_scenario
 	part.is_removable = scenario != null and type in scenario.removable_parts
 	slot.install(part)
+	AudioManager.play_sfx("place")
 	# Arızalı parça geri takıldıysa yine arızalı sayılır
 	if part.is_broken:
 		GameManager.broken_parts.append(type)
@@ -393,7 +395,7 @@ func _drop_cable(part: PartItem, global_point: Vector2) -> void:
 	var target: MotherboardSlot = null
 	for slot: MotherboardSlot in slots:
 		if slot.accepted_type == part.data.part_type and slot.is_visible_in_tree() \
-				and slot.get_global_rect().grow(CABLE_SNAP).has_point(global_point):
+				and slot.get_global_rect().grow(CABLE_SNAP * UIStyle.ui_scale(get_viewport())).has_point(global_point):
 			target = slot
 			break
 	if target == null:
@@ -407,6 +409,7 @@ func _drop_cable(part: PartItem, global_point: Vector2) -> void:
 		return
 
 	target.install(part)
+	AudioManager.play_sfx("place")
 	cable_layer.add_cable(part, origin["point"], origin["dir"], Rect2(target.position, target.size))
 	_check_complete()
 
@@ -439,6 +442,7 @@ func _animate_cable_removal(part: PartItem, slot: MotherboardSlot) -> void:
 	for i: int in range(3):
 		pull.tween_property(part, "global_position", start + dir * 3.0, 0.05)
 		pull.tween_property(part, "global_position", start - dir * 1.0, 0.05)
+	pull.tween_callback(AudioManager.play_sfx.bind("pop"))
 	pull.tween_callback(cable_layer.pop_at.bind(slot.position + slot.size / 2.0, part.data.cable_color))
 	pull.tween_property(part, "global_position", start + dir * 34.0, 0.18).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	pull.tween_interval(0.15)
@@ -499,7 +503,10 @@ func _reveal(slot: MotherboardSlot, animate: bool) -> void:
 		slot.modulate.a = 0.0
 		create_tween().tween_property(slot, "modulate:a", 1.0, 0.3)
 
-func _reject(part: PartItem, message: String = "") -> void:
+# penalty: parçaya zarar verecek gerçek sıra hatası (yardım mesajları ceza kesmez)
+func _reject(part: PartItem, message: String = "", penalty: bool = false) -> void:
+	if penalty:
+		EventBus.mistake_made.emit("sequence")
 	if message != "":
 		EventBus.warning_requested.emit(message)
 	EventBus.part_return_requested.emit(part)

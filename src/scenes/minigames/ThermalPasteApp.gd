@@ -18,9 +18,9 @@ signal clean_complete() ## Temizleme modunda kurumuş macun silindi
 
 const PASTE_COLOR: Color = Color("#94a3b8")
 const PASTE_SHADOW: Color = Color(100.0 / 255.0, 116.0 / 255.0, 139.0 / 255.0, 0.45)
-const SPILL_MARGIN: float = 2.0
 const DRIED_COLOR: Color = Color("#8f8574")
 
+var spill_margin: float = 2.0 ## Macun alanı dışına taşma payı
 var cleaning: bool = false ## true: bezle eski macunu silme modu
 var _dirty_total: int = 0
 var paste_points: Array[Vector2] = []
@@ -36,6 +36,10 @@ var coverage_grid: Array = []
 
 func _ready() -> void:
 	clip_contents = true
+	# Telefonda parmak işlemciyi kapatır: fırça ve taşma payı büyür
+	if UIStyle.ui_scale(get_viewport()) > 1.0:
+		brush_radius *= 1.6
+		spill_margin = 12.0
 	mouse_default_cursor_shape = Control.CURSOR_CROSS
 	grid_cols = int(size.x / cell_size)
 	grid_rows = int(size.y / cell_size)
@@ -100,11 +104,11 @@ func _gui_input(event: InputEvent) -> void:
 			is_painting = false
 	elif event is InputEventMouseMotion and is_painting and not has_spilled:
 		var pos: Vector2 = (event as InputEventMouseMotion).position
-		# Taşma kontrolü (2 px tolerans); temizlerken taşma olmaz
+		# Taşma kontrolü; temizlerken taşma olmaz
 		if cleaning:
 			_scrub(pos)
 			return
-		if pos.x < -SPILL_MARGIN or pos.x > size.x + SPILL_MARGIN or pos.y < -SPILL_MARGIN or pos.y > size.y + SPILL_MARGIN:
+		if pos.x < -spill_margin or pos.x > size.x + spill_margin or pos.y < -spill_margin or pos.y > size.y + spill_margin:
 			_trigger_spill()
 			return
 		_paint(pos)

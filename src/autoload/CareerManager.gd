@@ -7,6 +7,7 @@ extends Node
 # hesaplanır, müşteri tezgâhta yorumunu ve ödemesini yapıp çıkar; oyun otomatik kaydedilir.
 
 const SAVE_PATH: String = "user://kariyer.json"
+const SAVE_VERSION: int = 2
 const RESULT_SCENE: String = "res://src/scenes/ui/ResultScreen.tscn" ## Gün sonu özeti
 const COUNTER_SCENE: String = "res://src/scenes/counter/Counter.tscn"
 const CUSTOMERS_DIR: String = "res://data/customers/"
@@ -61,7 +62,6 @@ var last_result: Dictionary = {}
 var counter_mode: String = "arrive"
 
 func _ready() -> void:
-	EventBus.warning_requested.connect(func(_m: String) -> void: record_mistake("sequence"))
 	EventBus.paste_failed.connect(func() -> void: record_mistake("paste_spill"))
 	EventBus.mistake_made.connect(record_mistake)
 	EventBus.boot_failed.connect(_on_boot_failed)
@@ -76,6 +76,7 @@ func new_game() -> void:
 	day = 1
 	jobs_done = 0
 	star_total = 0
+	_clear_job()
 	_begin_day()
 	save_game()
 	start_current_job()
@@ -85,7 +86,8 @@ func continue_game() -> void:
 		new_game()
 		return
 	if job_index >= day_queue.size():
-		start_next_day()
+		# Günün son müşterisinden sonra çıkıldıysa özet atlanmasın
+		show_day_summary()
 	else:
 		start_current_job()
 
@@ -98,7 +100,12 @@ func start_current_job() -> void:
 # Tezgâhta arıza dinlendi: bilgisayar atölyeye alınır
 func enter_workshop() -> void:
 	is_career = true
-	_reset_job()
+	# Arıza yeniden belirlendiği için ilk BIOS yine teşhistir; ama yarım kalan işin hataları silinmez
+	failed_boots = 0
+	if not job_active:
+		mistakes.clear()
+		job_active = true
+	save_game()
 	GameManager.start_scenario(load(day_queue[job_index]))
 
 func show_day_summary() -> void:
@@ -150,6 +157,7 @@ func finish_job() -> void:
 		"day_done": job_index + 1 >= day_queue.size(),
 	}
 	job_index += 1
+	_clear_job()
 	save_game()
 	EventBus.career_updated.emit()
 	counter_mode = "farewell"
@@ -161,6 +169,8 @@ func record_mistake(kind: String) -> void:
 	if not job_active:
 		return
 	mistakes[kind] = mistakes.get(kind, 0) + 1
+	if is_career:
+		save_game() # Menüye çıkıp dönmek hatayı silmesin
 	EventBus.career_updated.emit()
 
 func total_mistakes() -> int:
@@ -187,6 +197,11 @@ func _reset_job() -> void:
 	mistakes.clear()
 	failed_boots = 0
 	job_active = true
+
+func _clear_job() -> void:
+	mistakes.clear()
+	failed_boots = 0
+	job_active = false
 
 func _begin_day() -> void:
 	job_index = 0
@@ -224,14 +239,28 @@ func _assign_customers() -> void:
 
 func save_game() -> void:
 	var data: Dictionary = {
+		"version": SAVE_VERSION,
+		"job_active": job_active, "mistakes": mistakes,
 		"money": money, "day": day, "job_index": job_index, "day_queue": day_queue,
 		"day_customers": day_customers,
 		"jobs_done": jobs_done, "star_total": star_total,
 		"day_earned": day_earned, "day_star_total": day_star_total, "day_jobs": day_jobs,
 	}
-	var file: FileAccess = FileAccess.open(SAVE_PATH, FileAccess.WRITE)
-	if file:
-		file.store_string(JSON.stringify(data, "\t"))
+	# Önce geçici dosyaya yazılır: yarım kalan yazım eski kaydı bozmasın
+	var temp_path: String = SAVE_PATH + ".tmp"
+	var file: FileAccess = FileAccess.open(temp_path, FileAccess.WRITE)
+	if file == null:
+		push_warning("Kayıt açılamadı: %s" % error_string(FileAccess.get_open_error()))
+		return
+	file.store_string(JSON.stringify(data, "\t"))
+	var write_error: Error = file.get_error()
+	file.close()
+	if write_error != OK:
+		push_warning("Kayıt yazılamadı: %s" % error_string(write_error))
+		return
+	var rename_error: Error = DirAccess.rename_absolute(ProjectSettings.globalize_path(temp_path), ProjectSettings.globalize_path(SAVE_PATH))
+	if rename_error != OK:
+		push_warning("Kayıt tamamlanamadı: %s" % error_string(rename_error))
 
 func load_game() -> bool:
 	if not has_save():
@@ -246,8 +275,21 @@ func load_game() -> bool:
 	day = int(data.get("day", 1))
 	job_index = int(data.get("job_index", 0))
 	day_queue.clear()
+	var queue_ok: bool = true
 	for path: Variant in data.get("day_queue", []):
-		day_queue.append(str(path))
+		if ResourceLoader.exists(str(path)):
+			day_queue.append(str(path))
+		else:
+			queue_ok = false
+	# Silinmiş bir iş varsa gün yeniden kurulur (aşağıda _begin_day)
+	if not queue_ok:
+		day_queue.clear()
+	job_active = queue_ok and bool(data.get("job_active", false))
+	mistakes.clear()
+	var saved_mistakes: Variant = data.get("mistakes", {})
+	if saved_mistakes is Dictionary:
+		for kind: Variant in saved_mistakes:
+			mistakes[str(kind)] = int(saved_mistakes[kind])
 	day_customers.clear()
 	for path: Variant in data.get("day_customers", []):
 		if ResourceLoader.exists(str(path)):

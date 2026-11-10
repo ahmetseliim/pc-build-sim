@@ -24,7 +24,7 @@ func _ready() -> void:
 	visible = false
 	bios_text.bbcode_enabled = true
 	bios_text.add_theme_font_override("normal_font", UIStyle.mono_font())
-	bios_text.add_theme_font_size_override("normal_font_size", 16)
+	bios_text.add_theme_font_size_override("normal_font_size", UIStyle.scaled(get_viewport(), 16))
 	bios_text.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	EventBus.bios_boot_requested.connect(start_boot)
 	boot_timer.wait_time = 0.28

@@ -26,6 +26,7 @@ func _ready() -> void:
 	_style_labels()
 	_style_button(menu_button, Color(0.06, 0.09, 0.16, 0.85), 13)
 	_style_button(start_work_button, Color("#10b981"), 15)
+	menu_button.position.x += UIStyle.safe_side()
 	toast.visible = false
 	menu_button.pressed.connect(GameManager.go_to_menu)
 	start_work_button.pressed.connect(_close_order_card)
@@ -47,11 +48,11 @@ func _build_status_bar() -> void:
 	style.content_margin_top = 6
 	style.content_margin_bottom = 6
 	bar.add_theme_stylebox_override("panel", style)
-	bar.position = Vector2(120, 10)
+	bar.position = Vector2(120.0 * UIStyle.ui_scale(get_viewport()) + UIStyle.safe_side(), 10.0)
 	bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_status_label = Label.new()
 	_status_label.add_theme_font_override("font", UIStyle.ui_font(true))
-	_status_label.add_theme_font_size_override("font_size", 13)
+	_status_label.add_theme_font_size_override("font_size", UIStyle.scaled(get_viewport(), 13))
 	_status_label.add_theme_color_override("font_color", Color.WHITE)
 	bar.add_child(_status_label)
 	add_child(bar)
@@ -119,7 +120,7 @@ func _show_toast(text: String, border: Color) -> void:
 
 func _style_labels() -> void:
 	toast_label.add_theme_font_override("font", UIStyle.ui_font(true))
-	toast_label.add_theme_font_size_override("font_size", 15)
+	toast_label.add_theme_font_size_override("font_size", UIStyle.scaled(get_viewport(), 15))
 	toast_label.add_theme_color_override("font_color", Color.WHITE)
 
 	var card: StyleBoxFlat = UIStyle.box(Color("#1c1210"), 12, 2, Color("#e2b083"), Color(0, 0, 0, 0.6), 16, Vector2(0, 10))
@@ -130,10 +131,13 @@ func _style_labels() -> void:
 	_label(customer_label, 14, Color("#cbd5e1"), true)
 	_label(complaint_label, 16, Color("#f8fafc"), false)
 	_label(hint_label, 13, Color("#94a3b8"), false)
+	var text_width: float = 460.0 * UIStyle.ui_scale(get_viewport())
+	complaint_label.custom_minimum_size.x = text_width
+	hint_label.custom_minimum_size.x = text_width
 
 func _label(label: Label, size: int, color: Color, bold: bool) -> void:
 	label.add_theme_font_override("font", UIStyle.ui_font(bold))
-	label.add_theme_font_size_override("font_size", size)
+	label.add_theme_font_size_override("font_size", UIStyle.scaled(get_viewport(), size))
 	label.add_theme_color_override("font_color", color)
 
 func _style_button(button: Button, bg: Color, font_size: int) -> void:
@@ -149,7 +153,7 @@ func _style_button(button: Button, bg: Color, font_size: int) -> void:
 	button.add_theme_stylebox_override("pressed", hover)
 	button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 	button.add_theme_font_override("font", UIStyle.ui_font(true))
-	button.add_theme_font_size_override("font_size", font_size)
+	button.add_theme_font_size_override("font_size", UIStyle.scaled(get_viewport(), font_size))
 	for key: String in ["font_color", "font_hover_color", "font_pressed_color"]:
 		button.add_theme_color_override(key, Color.WHITE)
 	button.focus_mode = Control.FOCUS_NONE

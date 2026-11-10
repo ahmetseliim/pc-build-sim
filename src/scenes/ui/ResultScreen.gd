@@ -48,14 +48,14 @@ func _label(text: String, size: int, color: Color, bold: bool) -> Label:
 	var label: Label = Label.new()
 	label.text = text
 	label.add_theme_font_override("font", UIStyle.ui_font(bold))
-	label.add_theme_font_size_override("font_size", size)
+	label.add_theme_font_size_override("font_size", UIStyle.scaled(get_viewport(), size))
 	label.add_theme_color_override("font_color", color)
 	box.add_child(label)
 	return label
 
 func _row(left: String, right: String, color: Color, size: int = 15) -> void:
 	var row: HBoxContainer = HBoxContainer.new()
-	row.custom_minimum_size = Vector2(420, 0)
+	row.custom_minimum_size = Vector2(420.0 * UIStyle.ui_scale(get_viewport()), 0)
 	var l: Label = Label.new()
 	l.text = left
 	l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -63,7 +63,7 @@ func _row(left: String, right: String, color: Color, size: int = 15) -> void:
 	r.text = right
 	for label: Label in [l, r]:
 		label.add_theme_font_override("font", UIStyle.ui_font(true))
-		label.add_theme_font_size_override("font_size", size)
+		label.add_theme_font_size_override("font_size", UIStyle.scaled(get_viewport(), size))
 		label.add_theme_color_override("font_color", color)
 		row.add_child(label)
 	box.add_child(row)
@@ -92,7 +92,7 @@ func _button(text: String, action: Callable, secondary: bool = false) -> void:
 	button.add_theme_stylebox_override("pressed", hover)
 	button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 	button.add_theme_font_override("font", UIStyle.ui_font(true))
-	button.add_theme_font_size_override("font_size", 14 if secondary else 17)
+	button.add_theme_font_size_override("font_size", UIStyle.scaled(get_viewport(), 14 if secondary else 17))
 	for key: String in ["font_color", "font_hover_color", "font_pressed_color"]:
 		button.add_theme_color_override(key, Color.WHITE)
 	button.focus_mode = Control.FOCUS_NONE
