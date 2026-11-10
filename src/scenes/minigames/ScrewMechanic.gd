@@ -55,7 +55,8 @@ func start(prelocked: bool = false) -> void:
 		screw.scale = Vector2(zoom, zoom)
 		screw.touch_padding = 10.0 if compact else 0.0
 		screw.screw_id = "screw_%d" % i
-		screw.screw_speed = screw_speed
+		# Cırcır tornavida alındıysa vidalar daha hızlı döner
+		screw.screw_speed = screw_speed * CareerManager.screw_speed_multiplier()
 		if prelocked:
 			screw.progress = 100.0
 			screw.is_locked = true

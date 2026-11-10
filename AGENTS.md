@@ -38,7 +38,13 @@ Proje dizin yapısı ve açıklamaları:
   sağlam parça sökme, ilk teşhisten sonraki her başarısız BIOS, parçaya zarar verecek sıra hataları (`Motherboard._reject(..., true)`). Yardım mesajları ceza kesmez.
   Hatalar ve aktif iş kayda yazılır: menüye çıkıp dönmek hataları silmez. Kayıt önce geçici dosyaya yazılır, `version` alanı taşır.
   Menüdeki "Test" listesinden açılan işler kariyeri etkilemez (`is_career = false`).
-- `src/scenes/ui/ResultScreen.tscn` — İş sonucu (ödeme, hatalar, yıldız) ve gün sonu özeti
+  Bahşiş yıldıza göre ayrı ödenir (`TIP_RATES`: 5★ %15, 4★ %8, 3★ %3).
+- `src/resources/UpgradeData.gd` + `data/upgrades/*.tres` — Gün sonu mağazasındaki alımlar (Good Pizza, Great Pizza mantığı).
+  Türler: `raf` (iş türü açar), `alet` (kolaylık), `dekor` (bahşiş, müşteri). Etki kodda id ile sorgulanır:
+  `CareerManager.effect_active(id)` (yalnız kariyerde). Senaryonun `required_upgrade` alanı alınmamışsa müşteri tezgâhta
+  geri gönderilir (`turn_away_current`), ücreti gün sonunda "kaçan kazanç" olur. Rafsız işten günde en fazla bir müşteri gelir.
+  Kira yok. Alım anında kaydedilir. Yeni alım: `.tres` oluştur, etkisini id ile bağla.
+- `src/scenes/ui/ResultScreen.tscn` — Gün sonu özeti (kazanç, bahşiş, geri gönderilen müşteri) ve dükkân mağazası
 - `src/scenes/inventory/` — Envanter çekmecesi
 - `src/scenes/minigames/` — Mini oyunlar (termal macun, vida sıkma, BIOS boot)
 - `src/scenes/ui/` — HUD, menüler ve kullanıcı arayüzü
@@ -101,4 +107,5 @@ Montaj döngüsü:
 |-------|-------------|------------|
 | 2026-09-27 | Muhammed | Proje Godot 4'e taşındı. Temel yapı oluşturuldu. |
 | 2026-10-14 | Ahmet Selim | `index.html` prototipinin tasarımı ve oynanışı Godot'a birebir taşındı (mandal, macun, vida, kablolar, CMOS, uyarılar). |
+| 2026-11-10 | Claude | Aşama 2: gün sonu mağazası (Raf, Alet, Dekor), SSD rafı, cırcır tornavida, macun şablonu, çay ocağı, bahşiş, rafsız müşterinin geri gönderilmesi. Kayıt sürümü 3. |
 | 2026-11-10 | Claude | Aşama 1: ceza ve kayıt düzeltmeleri, tezgâh ile iş emrinde aynı şikâyet, RAM numarası, kodla üretilen sesler, telefon yatay düzeni (`UIStyle.is_compact`: anakart solda, envanter sağda), Android geri tuşu. |

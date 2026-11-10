@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="UpgradeData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/resources/UpgradeData.gd" id="1_upgrade"]
+
+[resource]
+script = ExtResource("1_upgrade")
+id = "cay_ocagi"
+title = "Çay Ocağı"
+category = "dekor"
+price = 1400
+effect = "Memnun müşteri (3 yıldız ve üstü) iş ücretinin %10'u kadar fazla bahşiş bırakır."
+order = 10

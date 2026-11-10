@@ -12,6 +12,8 @@ extends Resource
 @export_multiline var complaint: String = "" ## Boşsa arızaya göre otomatik şikâyet yazılır
 @export_multiline var menu_description: String = ""
 @export_multiline var hint: String = "" ## İş emri kartında gösterilen ipucu
+## Bu işi kabul etmek için gereken dükkân alımı (data/upgrades/*.tres id'si, örn. "raf_ssd"). Boşsa her zaman yapılabilir.
+@export var required_upgrade: String = ""
 
 @export_group("Bilgisayarın durumu")
 ## Bu işte gelebilecek anakartlar (data/boards/*.tres); her seferinde biri rastgele seçilir. Boşsa modern kart.

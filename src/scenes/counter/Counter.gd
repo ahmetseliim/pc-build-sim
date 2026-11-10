@@ -23,7 +23,8 @@ const QUEUE_SCALE_STEP: float = 0.045
 const ENTER_DELAY: float = 0.9 ## Gün başında müşterilerin kapıdan giriş aralığı (sn)
 const TYPE_SPEED: float = 55.0 ## Konuşma balonunda harf/sn
 
-## Kariyer modunda boş şikâyetli (rastgele kablo arızalı) işler için genel şikâyet
+## Rafta parça olmadığı için geri gönderilen müşterinin sözü
+const TURNED_AWAY_LINE: String = "Hay aksi... Peki, başka bir dükkâna bakarım o zaman."
 
 ## Yıldıza göre genel yorumlar (5 yıldızda müşterinin kendi sözü kullanılır)
 const REVIEWS: Dictionary = {
@@ -100,7 +101,7 @@ func _ready() -> void:
 	_build_ui()
 	_shown_money = CareerManager.money
 	if CareerManager.counter_mode == "farewell":
-		_shown_money -= int(CareerManager.last_result.get("pay", 0))
+		_shown_money -= int(CareerManager.last_result.get("pay", 0)) + int(CareerManager.last_result.get("tip", 0))
 		_setup_farewell()
 	else:
 		_setup_arrival()
@@ -197,10 +198,28 @@ func _on_customer_at_counter() -> void:
 	GameManager.prepare_job(CareerManager.current_scenario())
 	var complaint: String = GameManager.get_complaint()
 	var text: String = complaint if customer.greeting == "" else customer.greeting + " " + complaint
-	_say(customer, text, _offer_workshop)
+	var missing: UpgradeData = CareerManager.current_job_missing()
+	if missing:
+		_say(customer, text, _offer_turn_away.bind(missing))
+	else:
+		_say(customer, text, _offer_workshop)
 
 func _offer_workshop() -> void:
 	_show_action("Bilgisayarı Atölyeye Al  ▶", CareerManager.enter_workshop)
+
+# Bu işin parçası rafta yok: iş kabul edilemez (gün sonu mağazasından alınır)
+func _offer_turn_away(missing: UpgradeData) -> void:
+	_show_action("%s yok · Üzgünüm, yapamam  ▶" % missing.title, _turn_away)
+
+func _turn_away() -> void:
+	_hide_action()
+	CareerManager.turn_away_current()
+	AudioManager.play_sfx("warn")
+	_say(_at_counter.data, TURNED_AWAY_LINE, _leave_after.bind(1.2))
+
+func _leave_after(delay: float) -> void:
+	await get_tree().create_timer(delay).timeout
+	_send_off()
 
 # --- Teslim ve ödeme ----------------------------------------------------------
 
@@ -241,7 +260,10 @@ func _build_review_extras(r: Dictionary) -> void:
 			"-%d%%" % int(count * CareerManager.MISTAKE_PENALTY * 100), RED))
 	if mistakes.is_empty():
 		_extras.add_child(_receipt_row("Hatasız iş!", "", GREEN))
-	_extras.add_child(_receipt_row("Ödenen", "+%d ₺" % pay, GREEN, 26))
+	var tip: int = int(r.get("tip", 0))
+	if tip > 0:
+		_extras.add_child(_receipt_row("Bahşiş", "+%d ₺" % tip, Color("#A16207")))
+	_extras.add_child(_receipt_row("Ödenen", "+%d ₺" % (pay + tip), GREEN, 26))
 	_extras.visible = false
 
 func _show_payment(r: Dictionary) -> void:

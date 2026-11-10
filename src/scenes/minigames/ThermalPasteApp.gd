@@ -40,6 +40,10 @@ func _ready() -> void:
 	if UIStyle.ui_scale(get_viewport()) > 1.0:
 		brush_radius *= 1.6
 		spill_margin = 12.0
+	# Macun şablonu: taşma payı iki katına, daha az kapsama yeterli
+	if CareerManager.effect_active("macun_sablonu"):
+		spill_margin *= 2.0
+		min_coverage_percent = minf(min_coverage_percent, 75.0)
 	mouse_default_cursor_shape = Control.CURSOR_CROSS
 	grid_cols = int(size.x / cell_size)
 	grid_rows = int(size.y / cell_size)
