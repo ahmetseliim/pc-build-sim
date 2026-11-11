@@ -15,13 +15,16 @@ const VISIBLE_SPAN: Vector2 = Vector2(420, 1600) ## Dar ekranda bile görünmesi
 const DOOR_POS: Vector2 = Vector2(687, 700) ## Kapı eşiği
 const DOOR_SCALE: float = 0.4
 const COUNTER_POS: Vector2 = Vector2(1000, 1010) ## Tezgâhın arkası (alt kısım tezgâhla örtülür)
-const COUNTER_SCALE: float = 1.0
+const COUNTER_SCALE: float = 1.24 ## Tezgâhtaki müşteri büyük görünür (belden yukarı, yüzü açık)
+const BUBBLE_GAP: float = 34.0 ## Balon ile yüz arasındaki boşluk (ekran birimi)
 const QUEUE_FIRST: Vector2 = Vector2(1265, 790) ## Sıradaki ilk bekleme noktası
 const QUEUE_STEP: Vector2 = Vector2(108, -17) ## Her arkadaki kişi için kayma
 const QUEUE_FIRST_SCALE: float = 0.56
 const QUEUE_SCALE_STEP: float = 0.045
 const ENTER_DELAY: float = 0.9 ## Gün başında müşterilerin kapıdan giriş aralığı (sn)
 const TYPE_SPEED: float = 55.0 ## Konuşma balonunda harf/sn
+const BUBBLE_DELAY: float = 0.25 ## Müşteri yerine oturduktan sonra balonun açılması (sn)
+const EXIT_SPOT: Vector2 = Vector2(1000, 800) ## Tezgâhtan inen müşterinin küçük hâliyle kapıya yürümeye başladığı yer
 
 ## Rafta parça olmadığı için geri gönderilen müşterinin sözü
 const TURNED_AWAY_LINE: String = "Hay aksi... Peki, başka bir dükkâna bakarım o zaman."
@@ -53,21 +56,26 @@ const RED: Color = Color("#B4544A")
 
 ## SVG'deki yazılar (Godot SVG yazısı çizmediği için etiket olarak eklenir): metin, orta-alt nokta, boyut, renk
 const SIGN_TEXTS: Array = [
-	["AÇIK", Vector2(687, 306), 30, Color("#B4544A")],
-	["PC TAMİRCİSİ", Vector2(990, 156), 30, Color("#1E1A17")],
-	["TAMİR", Vector2(990, 276), 22, Color("#F2C14E")],
-	["Format · Kurulum", Vector2(990, 300), 16, Color("#F4EBDD")],
-	["Parça Değişimi", Vector2(990, 321), 16, Color("#F4EBDD")],
-	["Termal Bakım", Vector2(990, 342), 16, Color("#F4EBDD")],
-	["RAM", Vector2(1816, 268), 20, Color("#1E1A17")],
-	["SSD", Vector2(1817, 608), 16, Color("#1E1A17")],
+	["AÇIK", Vector2(688, 284), 30, Color("#B4544A")],
+	["PC TAMİRCİSİ", Vector2(990, 104), 30, Color("#1E1A17")],
+	["TAMİR", Vector2(990, 244), 22, Color("#F2C14E")],
+	["Format · Kurulum", Vector2(990, 268), 16, Color("#F4EBDD")],
+	["Parça Değişimi", Vector2(990, 289), 16, Color("#F4EBDD")],
+	["Termal Bakım", Vector2(990, 310), 16, Color("#F4EBDD")],
+	["RAM", Vector2(1813, 226), 20, Color("#1E1A17")],
+	["SSD", Vector2(1814, 606), 16, Color("#1E1A17")],
 ]
-const TILL_POS: Vector2 = Vector2(1651, 738) ## Yazar kasa ekranı (kasadaki parayı gösterir)
+const TILL_POS: Vector2 = Vector2(1653, 712) ## Yazar kasa ekranı (kasadaki parayı gösterir)
+## Satın alınınca tezgâhın üstünde görünen dekorlar: alım id'si -> [görsel, tezgâh üstündeki alt orta nokta, genişlik]
+const COUNTER_DECOR: Dictionary = {
+	"cay_ocagi": ["res://assets/shop/cay_ocagi.png", Vector2(800, 852), 200.0],
+}
 
 @onready var backdrop: ColorRect = $Backdrop
 @onready var world: Node2D = $World
 @onready var signs: Node2D = $World/Signs
 @onready var crowd: Node2D = $World/Crowd
+@onready var front: Sprite2D = $World/Front
 @onready var ui: Control = $UI
 
 var _at_counter: CustomerWalker = null
@@ -98,6 +106,7 @@ func _ready() -> void:
 		GameManager.go_to_menu()
 		return
 	_build_signs()
+	_build_decor()
 	_build_ui()
 	_shown_money = CareerManager.money
 	if CareerManager.counter_mode == "farewell":
@@ -145,6 +154,23 @@ func _build_signs() -> void:
 		_world_label(entry[0], entry[1], entry[2], entry[3])
 	_till_label = _world_label("", TILL_POS, 26, INK)
 
+# Alınan dekorlar tezgâhın önündeki katmanın üstüne konur (Good Pizza'daki gibi alım dükkânda görünür)
+func _build_decor() -> void:
+	for id: String in COUNTER_DECOR:
+		var entry: Array = COUNTER_DECOR[id]
+		if not CareerManager.has_upgrade(id) or not ResourceLoader.exists(entry[0]):
+			continue
+		var sprite: Sprite2D = Sprite2D.new()
+		sprite.texture = load(entry[0])
+		sprite.centered = false
+		var tex_size: Vector2 = sprite.texture.get_size()
+		var s: float = float(entry[2]) / tex_size.x
+		sprite.scale = Vector2(s, s)
+		sprite.position = Vector2(entry[1]) - Vector2(tex_size.x * s / 2.0, tex_size.y * s)
+		sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+		world.add_child(sprite)
+		world.move_child(sprite, front.get_index() + 1)
+
 func _world_label(text: String, bottom_center: Vector2, font_size: int, color: Color) -> Label:
 	var label: Label = Label.new()
 	label.text = text
@@ -175,10 +201,9 @@ func _setup_arrival() -> void:
 	AudioManager.play_sfx("bell")
 	var first: int = CareerManager.job_index
 	var day_start: bool = first == 0
-	_at_counter = _spawn(first, DOOR_POS, DOOR_SCALE)
+	_at_counter = _spawn(first, COUNTER_POS, COUNTER_SCALE)
 	_at_counter.modulate.a = 0.0
-	_at_counter.walk_to(COUNTER_POS, COUNTER_SCALE, "in")
-	_at_counter.arrived.connect(_on_customer_at_counter, CONNECT_ONE_SHOT)
+	get_tree().create_timer(0.35).timeout.connect(_rise_at_counter.bind(_at_counter))
 	for i: int in range(first + 1, CareerManager.day_queue.size()):
 		var slot: int = _queue.size()
 		if day_start:
@@ -191,7 +216,17 @@ func _setup_arrival() -> void:
 		else:
 			_queue.append(_spawn(i, _queue_spot(slot), _queue_scale(slot)))
 
+# Müşteri tezgâhın arkasından yükselir; yerine oturunca kısa bir bekleyişle konuşmaya başlar
+func _rise_at_counter(walker: CustomerWalker) -> void:
+	if not is_instance_valid(walker):
+		return
+	walker.arrived.connect(func() -> void:
+		get_tree().create_timer(BUBBLE_DELAY).timeout.connect(_on_customer_at_counter), CONNECT_ONE_SHOT)
+	walker.rise_in()
+
 func _on_customer_at_counter() -> void:
+	if _at_counter == null:
+		return
 	_update_hud()
 	var customer: CustomerData = _at_counter.data
 	# Arıza burada belirlenir: müşterinin anlattığı ile iş emrindeki aynı olur
@@ -215,6 +250,7 @@ func _turn_away() -> void:
 	_hide_action()
 	CareerManager.turn_away_current()
 	AudioManager.play_sfx("warn")
+	_at_counter.set_mood("sad")
 	_say(_at_counter.data, TURNED_AWAY_LINE, _leave_after.bind(1.2))
 
 func _leave_after(delay: float) -> void:
@@ -231,6 +267,7 @@ func _setup_farewell() -> void:
 		var slot: int = _queue.size()
 		_queue.append(_spawn(i, _queue_spot(slot), _queue_scale(slot)))
 	var stars: int = int(r.get("stars", 0))
+	_at_counter.set_mood("happy" if stars >= 4 else ("sad" if stars <= 2 else "normal"))
 	_say(_at_counter.data, _review_text(_at_counter.data, stars, r.get("mistakes", {})), _show_payment.bind(r))
 	_build_review_extras(r)
 
@@ -279,21 +316,39 @@ func _send_off() -> void:
 	_hide_action()
 	var leaving: CustomerWalker = _at_counter
 	_at_counter = null
-	leaving.walk_to(DOOR_POS, DOOR_SCALE, "out")
-	leaving.arrived.connect(leaving.queue_free, CONNECT_ONE_SHOT)
+	# Tezgâhın arkasına iner, sonra küçük hâliyle kapıdan çıkar
+	var index: int = _customer_index_of(leaving)
+	leaving.arrived.connect(func() -> void:
+		leaving.queue_free()
+		if index >= 0:
+			var walker: CustomerWalker = _spawn(index, EXIT_SPOT, QUEUE_FIRST_SCALE)
+			walker.set_mood(leaving.current_mood())
+			walker.walk_to(DOOR_POS, DOOR_SCALE, "out")
+			walker.arrived.connect(walker.queue_free, CONNECT_ONE_SHOT), CONNECT_ONE_SHOT)
+	leaving.sink_out()
 	if _queue.is_empty():
-		leaving.arrived.connect(_on_day_finished, CONNECT_ONE_SHOT)
+		get_tree().create_timer(1.6).timeout.connect(_on_day_finished)
 		return
-	# Giden biraz uzaklaşınca sıradakiler adım atar
-	await get_tree().create_timer(0.6).timeout
-	_at_counter = _queue.pop_front()
-	_at_counter.walk_to(COUNTER_POS, COUNTER_SCALE)
-	_at_counter.arrived.connect(_on_customer_at_counter, CONNECT_ONE_SHOT)
+	# Sıradaki öne çıkar: küçük hâli söner, büyük hâli tezgâhın arkasından yükselir
+	await get_tree().create_timer(0.45).timeout
+	var next_small: CustomerWalker = _queue.pop_front()
+	var next_index: int = CareerManager.job_index
+	next_small.fade_out()
+	_at_counter = _spawn(next_index, COUNTER_POS, COUNTER_SCALE)
+	_at_counter.modulate.a = 0.0
+	_rise_at_counter(_at_counter)
 	for i: int in range(_queue.size()):
 		var walker: CustomerWalker = _queue[i]
 		get_tree().create_timer(0.25 * (i + 1)).timeout.connect(
 			walker.walk_to.bind(_queue_spot(i), _queue_scale(i)))
 	_update_hud()
+
+# Figürün günün kaçıncı müşterisi olduğu (kapıdan çıkan küçük hâli için)
+func _customer_index_of(walker: CustomerWalker) -> int:
+	for i: int in range(CareerManager.day_customers.size()):
+		if CareerManager.customer_at(i) == walker.data:
+			return i
+	return -1
 
 func _on_day_finished() -> void:
 	_update_hud()
@@ -312,6 +367,8 @@ func _say(customer: CustomerData, text: String, then: Callable) -> void:
 	_type_progress = 0.0
 	_typing = true
 	_after_typing = then
+	if _at_counter:
+		_at_counter.set_talking(true)
 	_bubble.visible = true
 	_name_tag.visible = true
 	_bubble.scale = Vector2(0.85, 0.85)
@@ -322,6 +379,8 @@ func _say(customer: CustomerData, text: String, then: Callable) -> void:
 
 func _finish_typing() -> void:
 	_typing = false
+	if _at_counter:
+		_at_counter.set_talking(false)
 	_text_label.visible_characters = -1
 	if _after_typing.is_valid():
 		var then: Callable = _after_typing
@@ -334,36 +393,73 @@ func _hide_bubble() -> void:
 	_extras.visible = false
 	ui.queue_redraw()
 
-# Balonu müşterinin başının üstüne (ekrana sığacak şekilde) yerleştirir
+# Balonu yüzün yanına, ekranda daha geniş olan tarafa yerleştirir (yüzü kapatmaz;
+# müşterinin ifadesi hep görünür). Yer yetmezse eski düzene, başın üstüne döner.
 func _layout_bubble() -> void:
 	if _bubble == null or not _bubble.visible:
 		return
 	var ui_zoom: float = UIStyle.ui_scale(get_viewport())
-	var width: float = minf(size.x - 32.0, 700.0 * ui_zoom)
+	var face: Vector2 = _face_screen_pos()
+	var half: float = _face_half_screen()
+	var margin: float = 16.0 + UIStyle.safe_side()
+	var left_room: float = face.x - half - BUBBLE_GAP - margin
+	var right_room: float = size.x - (face.x + half + BUBBLE_GAP) - margin
+	var on_right: bool = right_room >= left_room
+	var room: float = maxf(left_room, right_room)
+	var width: float = minf(room, 700.0 * ui_zoom)
+	var beside: bool = width >= 380.0 * ui_zoom
+	if not beside:
+		width = minf(size.x - 2.0 * margin, 700.0 * ui_zoom)
 	_bubble.custom_minimum_size.x = width
 	_bubble.size = Vector2(width, 0)
-	var head: Vector2 = _head_screen_pos()
-	var top: float = 92.0 if ui_zoom > 1.0 else 104.0
-	var x: float = clampf(head.x - width * 0.45, 16.0, size.x - width - 16.0)
-	_bubble.position = Vector2(x, top)
-	_bubble.pivot_offset = Vector2(width / 2.0, _bubble.size.y)
+	var height: float = _bubble.get_combined_minimum_size().y
+	var top_limit: float = 90.0 * ui_zoom
+	if UIStyle.is_compact() and _queue_label:
+		# Yatay telefonda sıra etiketi sol üstte: isim etiketi onun üstüne binmesin
+		top_limit = maxf(top_limit, _queue_label.get_parent().get_global_rect().end.y + 30.0 * ui_zoom)
+	var bottom_limit: float = size.y - (_action_button.size.y + 60.0 if _action_button.visible else 40.0)
+	var x: float
+	var y: float
+	if beside:
+		x = face.x + half + BUBBLE_GAP if on_right else face.x - half - BUBBLE_GAP - width
+		y = clampf(face.y - height * 0.35, top_limit, maxf(top_limit, bottom_limit - height))
+	else:
+		x = clampf(face.x - width * 0.45, margin, size.x - width - margin)
+		y = top_limit
+	_bubble.position = Vector2(x, y)
+	_bubble.pivot_offset = Vector2(0.0 if on_right else width, height * 0.35) if beside else Vector2(width / 2.0, height)
 	_name_tag.position = _bubble.position + Vector2(22, -24.0 * ui_zoom)
 	ui.queue_redraw()
 
-func _head_screen_pos() -> Vector2:
-	var head_world: Vector2 = COUNTER_POS + Vector2(0, -CustomerWalker.FIGURE_HEIGHT * COUNTER_SCALE * 0.95)
-	return world.get_global_transform() * head_world
+func _face_screen_pos() -> Vector2:
+	if _at_counter:
+		return world.get_global_transform() * _at_counter.face_center()
+	var face_world: Vector2 = COUNTER_POS + Vector2(0, -CustomerWalker.FIGURE_HEIGHT * COUNTER_SCALE * (1.0 - CustomerWalker.FACE_CENTER_Y))
+	return world.get_global_transform() * face_world
 
-# Balonun kuyruğu: müşterinin başına doğru üçgen
+func _face_half_screen() -> float:
+	return CustomerWalker.FIGURE_HEIGHT * COUNTER_SCALE * CustomerWalker.FACE_HALF_WIDTH * world.scale.x
+
+# Balonun kuyruğu: yüze doğru üçgen (balon yandaysa yandan, üstteyse alttan çıkar)
 func _draw_tail() -> void:
 	if _bubble == null or not _bubble.visible or _bubble.modulate.a < 0.99:
 		return
-	var head: Vector2 = _head_screen_pos()
-	var bottom: float = _bubble.position.y + _bubble.size.y
-	var base_x: float = clampf(head.x - 60.0, _bubble.position.x + 40.0, _bubble.position.x + _bubble.size.x - 100.0)
-	var tip: Vector2 = Vector2(head.x + 10.0, maxf(bottom + 50.0, minf(head.y - 10.0, bottom + 90.0)))
-	var pts: PackedVector2Array = PackedVector2Array([
-		Vector2(base_x, bottom - 4.0), tip, Vector2(base_x + 56.0, bottom - 4.0)])
+	var face: Vector2 = _face_screen_pos()
+	var half: float = _face_half_screen()
+	var r: Rect2 = Rect2(_bubble.position, _bubble.size)
+	var pts: PackedVector2Array
+	if face.x - half >= r.end.x - 4.0 or face.x + half <= r.position.x + 4.0:
+		var right_side: bool = face.x > r.end.x
+		var edge: float = r.end.x - 4.0 if right_side else r.position.x + 4.0
+		var base_y: float = clampf(face.y - 26.0, r.position.y + 30.0, r.end.y - 70.0)
+		var tip_x: float = face.x - half - 6.0 if right_side else face.x + half + 6.0
+		var tip: Vector2 = Vector2(tip_x, clampf(face.y, r.position.y + 20.0, r.end.y + 40.0))
+		pts = PackedVector2Array([Vector2(edge, base_y), tip, Vector2(edge, base_y + 52.0)])
+	else:
+		var bottom: float = r.end.y
+		var base_x: float = clampf(face.x - 60.0, r.position.x + 40.0, r.end.x - 100.0)
+		var tip_down: Vector2 = Vector2(face.x + 10.0, maxf(bottom + 50.0, minf(face.y - half, bottom + 90.0)))
+		pts = PackedVector2Array([Vector2(base_x, bottom - 4.0), tip_down, Vector2(base_x + 56.0, bottom - 4.0)])
 	ui.draw_colored_polygon(pts, CREAM)
 	ui.draw_polyline(pts, INK, 4.0, true)
 

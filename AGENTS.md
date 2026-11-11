@@ -24,7 +24,12 @@ Proje dizin yapısı ve açıklamaları:
 - `src/resources/ScenarioData.gd` + `data/scenarios/*.tres` — Dükkâna gelen işler (hazır takılı parçalar, envanter, arızalar).
   Yeni senaryo: `.tres` oluştur ve `GameManager.SCENARIOS` listesine ekle
 - `src/scenes/counter/` — Tezgâh (dükkânın ön yüzü): müşteri kapıdan girer, sıraya dizilir, arızayı anlatır; iş bitince yorum/yıldız/ödeme yapıp çıkar (`Counter`, `CustomerWalker`)
-- `src/resources/CustomerData.gd` + `data/customers/*.tres` — Müşteri karakterleri (ad, tip, SVG görsel `assets/characters/`, isim rengi, selam ve teşekkür sözü).
+- `src/resources/CustomerData.gd` + `data/customers/*.tres` — Müşteri karakterleri (ad, tip, isim rengi, selam ve teşekkür sözü).
+  Görseller `assets/characters/<ad>.png` (belden yukarı, 768×1152, saydam): normal, `_mutlu`, `_kirgin`, `_konusma` (ağzı açık).
+  Yumuşak 2D stilde Codex ile üretildi; istemler ve üretim betikleri depo dışında `gorsel-uretim/tam/`. Eski SVG'ler kullanılmıyor.
+  Tezgâhta müşteri büyük (`COUNTER_SCALE`), tezgâhın arkasından yükselir/iner (`CustomerWalker.rise_in/sink_out`), konuşurken ağız oynar,
+  4–5 yıldızda mutlu, 1–2 yıldızda ve rafsız işte kırgın yüz (`set_mood`). Balon yüzün yanında, geniş tarafta (`Counter._layout_bubble`).
+  Satın alınan dekor tezgâhta görünür (`Counter.COUNTER_DECOR`, şimdilik çay ocağı). Dükkân arka planı ve tezgâh önü `assets/shop/*.png`; tabela yazıları `SIGN_TEXTS` ile üstüne konur.
   Kariyerde günün her işine `CareerManager._assign_customers()` ile bir karakter atanır
 - `src/scenes/workbench/` — Montaj masası (Motherboard, MotherboardSlot)
 - Anakart modelleri: `src/resources/BoardData.gd` + `data/boards/*.tres` (ad, dönem, soket, RAM türü, renkler) ve
@@ -107,5 +112,6 @@ Montaj döngüsü:
 |-------|-------------|------------|
 | 2026-09-27 | Muhammed | Proje Godot 4'e taşındı. Temel yapı oluşturuldu. |
 | 2026-10-14 | Ahmet Selim | `index.html` prototipinin tasarımı ve oynanışı Godot'a birebir taşındı (mandal, macun, vida, kablolar, CMOS, uyarılar). |
+| 2026-11-11 | Claude | Görsel yenileme: 10 müşteri yumuşak 2D stilde belden yukarı, 4 ifade; yeni dükkân arka planı ve tezgâh önü; tezgâhtan yükselme/inme, konuşurken ağız, balon yüzün yanında; çay ocağı tezgâhta görünür. |
 | 2026-11-10 | Claude | Aşama 2: gün sonu mağazası (Raf, Alet, Dekor), SSD rafı, cırcır tornavida, macun şablonu, çay ocağı, bahşiş, rafsız müşterinin geri gönderilmesi. Kayıt sürümü 3. |
 | 2026-11-10 | Claude | Aşama 1: ceza ve kayıt düzeltmeleri, tezgâh ile iş emrinde aynı şikâyet, RAM numarası, kodla üretilen sesler, telefon yatay düzeni (`UIStyle.is_compact`: anakart solda, envanter sağda), Android geri tuşu. |

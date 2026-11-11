@@ -1,13 +1,20 @@
-[gd_resource type="Resource" script_class="CustomerData" load_steps=3 format=3]
+[gd_resource type="Resource" script_class="CustomerData" load_steps=6 format=3]
 
 [ext_resource type="Script" path="res://src/resources/CustomerData.gd" id="1_customer"]
-[ext_resource type="Texture2D" path="res://assets/characters/uzun_sacli_abla.svg" id="2_texture"]
+[ext_resource type="Texture2D" path="res://assets/characters/uzun_sacli_abla.png" id="2_texture"]
+[ext_resource type="Texture2D" path="res://assets/characters/uzun_sacli_abla_mutlu.png" id="3_texture_happy"]
+[ext_resource type="Texture2D" path="res://assets/characters/uzun_sacli_abla_kirgin.png" id="4_texture_sad"]
+[ext_resource type="Texture2D" path="res://assets/characters/uzun_sacli_abla_konusma.png" id="5_texture_talk"]
 
 [resource]
 script = ExtResource("1_customer")
+texture = ExtResource("2_texture")
+texture_happy = ExtResource("3_texture_happy")
+texture_sad = ExtResource("4_texture_sad")
+texture_talk = ExtResource("5_texture_talk")
+texture_talk = ExtResource("5_texture_talk")
 display_name = "Uzun Saçlı Abla"
 role = "Grafik Tasarımcı"
-texture = ExtResource("2_texture")
 accent = Color(0.851, 0.3961, 0.2314, 1)
 greeting = "Merhaba, teslim tarihim yarın, yardım lazım!"
 thanks_line = "Hayat kurtardın! Projeyi yetiştiririm artık."

@@ -1,13 +1,20 @@
-[gd_resource type="Resource" script_class="CustomerData" load_steps=3 format=3]
+[gd_resource type="Resource" script_class="CustomerData" load_steps=6 format=3]
 
 [ext_resource type="Script" path="res://src/resources/CustomerData.gd" id="1_customer"]
-[ext_resource type="Texture2D" path="res://assets/characters/sakalli_dayi.svg" id="2_texture"]
+[ext_resource type="Texture2D" path="res://assets/characters/sakalli_dayi.png" id="2_texture"]
+[ext_resource type="Texture2D" path="res://assets/characters/sakalli_dayi_mutlu.png" id="3_texture_happy"]
+[ext_resource type="Texture2D" path="res://assets/characters/sakalli_dayi_kirgin.png" id="4_texture_sad"]
+[ext_resource type="Texture2D" path="res://assets/characters/sakalli_dayi_konusma.png" id="5_texture_talk"]
 
 [resource]
 script = ExtResource("1_customer")
+texture = ExtResource("2_texture")
+texture_happy = ExtResource("3_texture_happy")
+texture_sad = ExtResource("4_texture_sad")
+texture_talk = ExtResource("5_texture_talk")
+texture_talk = ExtResource("5_texture_talk")
 display_name = "Sakallı Dayı"
 role = "Emekli Öğretmen"
-texture = ExtResource("2_texture")
 accent = Color(0.7059, 0.3294, 0.2902, 1)
 greeting = "Hayırlı işler. Bu makineyle bir derdim var."
 thanks_line = "Aferin evlat, işini bilen adamsın."

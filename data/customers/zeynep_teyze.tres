@@ -1,13 +1,19 @@
-[gd_resource type="Resource" script_class="CustomerData" load_steps=3 format=3]
+[gd_resource type="Resource" script_class="CustomerData" load_steps=6 format=3]
 
 [ext_resource type="Script" path="res://src/resources/CustomerData.gd" id="1_customer"]
-[ext_resource type="Texture2D" path="res://assets/characters/zeynep_teyze.svg" id="2_texture"]
+[ext_resource type="Texture2D" path="res://assets/characters/zeynep_teyze.png" id="2_texture"]
+[ext_resource type="Texture2D" path="res://assets/characters/zeynep_teyze_mutlu.png" id="3_texture_happy"]
+[ext_resource type="Texture2D" path="res://assets/characters/zeynep_teyze_kirgin.png" id="4_texture_sad"]
+[ext_resource type="Texture2D" path="res://assets/characters/zeynep_teyze_konusma.png" id="5_texture_talk"]
 
 [resource]
 script = ExtResource("1_customer")
+texture = ExtResource("2_texture")
+texture_happy = ExtResource("3_texture_happy")
+texture_sad = ExtResource("4_texture_sad")
+texture_talk = ExtResource("5_texture_talk")
 display_name = "Zeynep Teyze"
 role = "Şüpheci Pazarlıkçı"
-texture = ExtResource("2_texture")
 accent = Color(0.3098, 0.6039, 0.4196, 1)
 greeting = "Evladım, bak bakalım şuna, ama kazık atma!"
 thanks_line = "Hıh, bu sefer gerçekten iyi iş çıkarmışsın."
