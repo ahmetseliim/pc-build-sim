@@ -11,7 +11,7 @@ extends Node
 # işin müşterisi gider ve gün sonunda "kaçan kazanç" olarak görünür.
 
 const SAVE_PATH: String = "user://kariyer.json"
-const SAVE_VERSION: int = 3
+const SAVE_VERSION: int = 4 ## 4: parça kataloğu (yeni alan yok; eski kayıtlar .get varsayılanlarıyla açılır)
 const RESULT_SCENE: String = "res://src/scenes/ui/ResultScreen.tscn" ## Gün sonu özeti
 const COUNTER_SCENE: String = "res://src/scenes/counter/Counter.tscn"
 const CUSTOMERS_DIR: String = "res://data/customers/"

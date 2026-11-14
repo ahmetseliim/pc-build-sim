@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="ComponentData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/resources/ComponentData.gd" id="1_part"]
+
+[resource]
+script = ExtResource("1_part")
+id = "ram_ddr4_8_kartal"
+part_type = "ram"
+part_name = "Kartal Hız 3200"
+brand = "Kartal"
+model = "Hız 3200"
+tier = 1
+buy_price = 90
+sell_price = 135
+price = 135.0
+min_shelf_level = 1
+art = "ram_t1"
+part_size = Vector2(42, 130)
+ram_type = "DDR4"
+capacity_gb = 8

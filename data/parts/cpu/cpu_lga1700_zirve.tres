@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="CPUData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/resources/CPUData.gd" id="1_part"]
+
+[resource]
+script = ExtResource("1_part")
+id = "cpu_lga1700_zirve"
+part_type = "cpu"
+part_name = "Zirve Z7-1700"
+brand = "Zirve"
+model = "Z7-1700"
+tier = 2
+buy_price = 1080
+sell_price = 1620
+price = 1620.0
+min_shelf_level = 2
+art = "cpu_t2"
+part_size = Vector2(115, 115)
+socket = "LGA1700"
+cores = 12
+clock_speed = 5.2
+tdp = 125
+has_igpu = true

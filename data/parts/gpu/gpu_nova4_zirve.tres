@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="GPUData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/resources/GPUData.gd" id="1_part"]
+
+[resource]
+script = ExtResource("1_part")
+id = "gpu_nova4_zirve"
+part_type = "gpu"
+part_name = "Zirve Nova 4"
+brand = "Zirve"
+model = "Nova 4"
+tier = 1
+buy_price = 700
+sell_price = 1050
+price = 1050.0
+min_shelf_level = 1
+art = "gpu_t1"
+part_size = Vector2(480, 52)
+vram_gb = 4
+power_draw = 75
+length_mm = 230
+pcie_gen = 4

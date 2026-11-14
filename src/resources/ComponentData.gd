@@ -16,6 +16,21 @@ extends Resource
 @export var icon_text: String = ""
 @export var is_new: bool = false ## Tamir dükkânında yedek olarak verilen yeni parça ("YENİ" etiketi)
 
+@export_group("Katalog")
+## Katalog parçası kimliği (data/parts/<tür>/<id>.tres), örn. "ram_ddr4_8_kartal". Boşsa katalogda olmayan genel parça (eski tür adıyla üretilenler, kablolar).
+@export var id: String = ""
+@export var brand: String = "" ## Kurgu marka: Kartal, Pusula, Zirve, Volta, Nimbus, Demirci
+@export var model: String = "" ## Marka içindeki model adı
+@export_range(0, 3) var tier: int = 0 ## 1 ekonomik, 2 dengeli, 3 üst; 0 katalogda değil
+@export var buy_price: int = 0 ## Dükkânın tedarikçiden alış fiyatı (₺)
+@export var sell_price: int = 0 ## Müşteriye satış fiyatı (₺); kâr = satış - alış
+@export var ram_type: String = "" ## RAM için DDR3 / DDR4 / DDR5
+@export var capacity_gb: int = 0 ## RAM ve SSD kapasitesi (1 TB = 1000)
+@export var watt: int = 0 ## Güç kaynağı gücü (ekran kartı ve işlemci için GPUData.power_draw / CPUData.tdp)
+@export var form_factor: String = "" ## Güç kaynağı için ATX vb.
+@export var min_shelf_level: int = 1 ## Hangi raf seviyesinde satılabilir (1-3)
+@export var art: String = "" ## Görsel anahtarı (P6'da parça görselini seçer), örn. "ram_t2"
+
 @export_group("Görünüm")
 @export var part_size: Vector2 = Vector2(100, 100) ## Envanterdeki boyut (px)
 @export var bg_color_end: Color = Color(0, 0, 0, 0) ## Doluysa 135° gradyan bitiş rengi

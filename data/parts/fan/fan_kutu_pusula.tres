@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="ComponentData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/resources/ComponentData.gd" id="1_part"]
+
+[resource]
+script = ExtResource("1_part")
+id = "fan_kutu_pusula"
+part_type = "fan"
+part_name = "Pusula Kutu"
+brand = "Pusula"
+model = "Kutu"
+tier = 1
+buy_price = 60
+sell_price = 90
+price = 90.0
+min_shelf_level = 1
+art = "fan_t1"
+part_size = Vector2(115, 115)

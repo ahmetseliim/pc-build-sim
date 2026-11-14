@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="CPUData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/resources/CPUData.gd" id="1_part"]
+
+[resource]
+script = ExtResource("1_part")
+id = "cpu_am5_zirve"
+part_type = "cpu"
+part_name = "Zirve Z7-AM"
+brand = "Zirve"
+model = "Z7-AM"
+tier = 2
+buy_price = 1080
+sell_price = 1620
+price = 1620.0
+min_shelf_level = 2
+art = "cpu_t2"
+part_size = Vector2(115, 115)
+socket = "AM5"
+cores = 8
+clock_speed = 5.0
+tdp = 105

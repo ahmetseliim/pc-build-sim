@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="ComponentData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/resources/ComponentData.gd" id="1_part"]
+
+[resource]
+script = ExtResource("1_part")
+id = "m2_1000_pusula"
+part_type = "m2"
+part_name = "Pusula Denge 1 TB"
+brand = "Pusula"
+model = "Denge 1 TB"
+tier = 2
+buy_price = 360
+sell_price = 540
+price = 540.0
+min_shelf_level = 2
+art = "m2_t2"
+part_size = Vector2(140, 38)
+capacity_gb = 1000

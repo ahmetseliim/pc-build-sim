@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="CPUData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/resources/CPUData.gd" id="1_part"]
+
+[resource]
+script = ExtResource("1_part")
+id = "cpu_lga1700_kartal"
+part_type = "cpu"
+part_name = "Kartal K5-1700"
+brand = "Kartal"
+model = "K5-1700"
+tier = 1
+buy_price = 600
+sell_price = 900
+price = 900.0
+min_shelf_level = 1
+art = "cpu_t1"
+part_size = Vector2(115, 115)
+socket = "LGA1700"
+cores = 6
+clock_speed = 4.4
+tdp = 65

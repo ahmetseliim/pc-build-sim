@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="GPUData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/resources/GPUData.gd" id="1_part"]
+
+[resource]
+script = ExtResource("1_part")
+id = "gpu_cikma_demirci"
+part_type = "gpu"
+part_name = "Demirci Çıkma 2 GB"
+brand = "Demirci"
+model = "Çıkma 2 GB"
+tier = 1
+buy_price = 250
+sell_price = 360
+price = 360.0
+min_shelf_level = 1
+art = "gpu_used"
+part_size = Vector2(480, 52)
+vram_gb = 2
+power_draw = 60
+length_mm = 200
+pcie_gen = 3

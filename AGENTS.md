@@ -31,6 +31,14 @@ Proje dizin yapısı ve açıklamaları:
   4–5 yıldızda mutlu, 1–2 yıldızda ve rafsız işte kırgın yüz (`set_mood`). Balon yüzün yanında, geniş tarafta (`Counter._layout_bubble`).
   Satın alınan dekor tezgâhta görünür (`Counter.COUNTER_DECOR`, şimdilik çay ocağı). Dükkân arka planı ve tezgâh önü `assets/shop/*.png`; tabela yazıları `SIGN_TEXTS` ile üstüne konur.
   Kariyerde günün her işine `CareerManager._assign_customers()` ile bir karakter atanır
+- `data/parts/<tür>/<id>.tres` — Parça kataloğu (29 parça; tür klasörleri: ram, sata, m2, fan, psu, gpu, cpu, paste).
+  Her parça `ComponentData` (CPU/GPU için `CPUData`/`GPUData`) olarak id, marka (kurgu: Kartal, Pusula, Zirve, Volta, Nimbus, Demirci),
+  model, kademe (1 ekonomik, 2 dengeli, 3 üst), `buy_price`/`sell_price`, RAM türü, kapasite, watt, `min_shelf_level`, `art` taşır.
+  Fiyat kuralı: kademe 2 alış ≈ 1,8×, kademe 3 ≈ 3× kademe 1; satış = alış × 1,4–1,55. `InventoryManager` açılışta klasörü yükler:
+  `create_part(id)` katalog parçasının kopyasını verir (boyut `PART_SIZES` ile yuvaya 1:1 zorlanır), `catalog_parts(tür, raf_seviyesi)` listeler.
+  Eski tür adı (`"ram"`, `"m2"`, `"gpu"`...) hâlâ geçerli ve DEĞİŞMEDEN genel (markasız) parça verir; senaryolar bunları kullanır.
+  Kablolar kataloğa girmez. Etiketi `PartArt.part_label()` kurar ("Kartal 8 GB DDR4"); markasız parça eski çizimini korur.
+  Yeni parça: `.tres` ekle (id dosya adıyla aynı, `part_size` yuva boyutu). Senaryo envanteri/takılı listeleri şimdilik yalnız tür adı kabul eder.
 - `src/scenes/workbench/` — Montaj masası (Motherboard, MotherboardSlot)
 - Anakart modelleri: `src/resources/BoardData.gd` + `data/boards/*.tres` (ad, dönem, soket, RAM türü, renkler) ve
   yerleşim sahneleri (modern: `Motherboard.tscn`, diğerleri: `src/scenes/workbench/boards/*.tscn`). Kod (`Motherboard.gd`)
@@ -112,6 +120,7 @@ Montaj döngüsü:
 |-------|-------------|------------|
 | 2026-09-27 | Muhammed | Proje Godot 4'e taşındı. Temel yapı oluşturuldu. |
 | 2026-10-14 | Ahmet Selim | `index.html` prototipinin tasarımı ve oynanışı Godot'a birebir taşındı (mandal, macun, vida, kablolar, CMOS, uyarılar). |
+| 2026-11-14 | Claude | Aşama 3 / P1: parça kataloğu (`data/parts`, 29 parça), `create_part(id)`, etikette marka ve kapasite, kayıt sürümü 4. |
 | 2026-11-11 | Claude | Görsel yenileme: 10 müşteri yumuşak 2D stilde belden yukarı, 4 ifade; yeni dükkân arka planı ve tezgâh önü; tezgâhtan yükselme/inme, konuşurken ağız, balon yüzün yanında; çay ocağı tezgâhta görünür. |
 | 2026-11-10 | Claude | Aşama 2: gün sonu mağazası (Raf, Alet, Dekor), SSD rafı, cırcır tornavida, macun şablonu, çay ocağı, bahşiş, rafsız müşterinin geri gönderilmesi. Kayıt sürümü 3. |
 | 2026-11-10 | Claude | Aşama 1: ceza ve kayıt düzeltmeleri, tezgâh ile iş emrinde aynı şikâyet, RAM numarası, kodla üretilen sesler, telefon yatay düzeni (`UIStyle.is_compact`: anakart solda, envanter sağda), Android geri tuşu. |

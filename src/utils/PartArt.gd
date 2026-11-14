@@ -22,23 +22,23 @@ static func draw(ci: CanvasItem, d: ComponentData, r: Rect2, placed: bool, angle
 		return
 	match d.part_type:
 		"cpu":
-			_draw_cpu(ci, r)
+			_draw_cpu(ci, d, r)
 		"paste":
-			_draw_paste(ci, r)
+			_draw_paste(ci, d, r)
 		"cloth":
 			_draw_cloth(ci, r)
 		"fan":
-			_draw_fan(ci, r, angle)
+			_draw_fan(ci, d, r, angle)
 		"ram":
 			_draw_ram(ci, d, r)
 		"m2":
-			_draw_m2(ci, r)
+			_draw_m2(ci, d, r)
 		"sata":
-			_draw_sata(ci, r)
+			_draw_sata(ci, d, r)
 		"gpu":
-			_draw_gpu(ci, r, angle)
+			_draw_gpu(ci, d, r, angle)
 		"psu":
-			_draw_psu(ci, r, angle)
+			_draw_psu(ci, d, r, angle)
 		_:
 			_shadowed_box(ci, r, d.bg_color, d.corner_radius)
 			_text(ci, r.get_center(), d.part_name, d.font_size, d.text_color)
@@ -48,13 +48,30 @@ static func draw(ci: CanvasItem, d: ComponentData, r: Rect2, placed: bool, angle
 		_box(ci, badge, Color("#16a34a"), 2)
 		_text(ci, badge.get_center(), "YENİ", 7, Color.WHITE)
 
+# Kapasite yazısı: 1000 GB ve üstü TB (1000 -> "1 TB", 500 -> "500 GB")
+static func capacity_text(gb: int) -> String:
+	return "%d TB" % (gb / 1000) if gb >= 1000 and gb % 1000 == 0 else "%d GB" % gb
+
+# Katalog parçasının kısa etiketi: "Kartal 8 GB DDR4", "Pusula 480 GB", "Volta 650 W", "Zirve Nova 8"
+static func part_label(d: ComponentData) -> String:
+	if d.brand == "":
+		return d.part_name
+	match d.part_type:
+		"ram":
+			return "%s %s %s" % [d.brand, capacity_text(d.capacity_gb), d.ram_type]
+		"m2", "sata":
+			return "%s %s" % [d.brand, capacity_text(d.capacity_gb)]
+		"psu":
+			return "%s %d W" % [d.brand, d.watt]
+	return "%s %s" % [d.brand, d.model]
+
 # Kablonun fişten çıktığı kenarın orta noktası
 static func entry_point(r: Rect2, dir: Vector2) -> Vector2:
 	return r.get_center() + Vector2(dir.x * r.size.x / 2.0, dir.y * r.size.y / 2.0)
 
 # --- Parçalar ---------------------------------------------------------------
 
-static func _draw_cpu(ci: CanvasItem, r: Rect2) -> void:
+static func _draw_cpu(ci: CanvasItem, d: ComponentData, r: Rect2) -> void:
 	_shadowed_box(ci, r, Color("#94a3b8"), 6)
 	UIStyle.draw_diagonal_gradient(ci, r, 6, Color("#cbd5e1"), Color("#64748b"))
 	_box(ci, r, Color.TRANSPARENT, 6, 2, Color("#475569"))
@@ -66,10 +83,15 @@ static func _draw_cpu(ci: CanvasItem, r: Rect2) -> void:
 	var p: Vector2 = r.position
 	ci.draw_colored_polygon(PackedVector2Array([
 		p + Vector2(5, r.size.y - 5), p + Vector2(17, r.size.y - 5), p + Vector2(5, r.size.y - 17)]), Color("#fbbf24"))
-	_text(ci, ihs.get_center() + Vector2(0, -7), "Z-CORE", 13, Color("#334155"))
-	_text(ci, ihs.get_center() + Vector2(0, 9), "i7 · 5.4 GHz", 8, Color("#475569"))
+	if d is CPUData and d.brand != "":
+		var cpu: CPUData = d as CPUData
+		_fit_text(ci, ihs.get_center() + Vector2(0, -7), cpu.brand.to_upper(), 13, Color("#334155"), ihs.size.x - 8.0)
+		_fit_text(ci, ihs.get_center() + Vector2(0, 9), "%s · %.1f GHz" % [cpu.model, cpu.clock_speed], 8, Color("#475569"), ihs.size.x - 8.0)
+	else:
+		_text(ci, ihs.get_center() + Vector2(0, -7), "Z-CORE", 13, Color("#334155"))
+		_text(ci, ihs.get_center() + Vector2(0, 9), "i7 · 5.4 GHz", 8, Color("#475569"))
 
-static func _draw_paste(ci: CanvasItem, r: Rect2) -> void:
+static func _draw_paste(ci: CanvasItem, d: ComponentData, r: Rect2) -> void:
 	_shadowed_box(ci, r, Color("#334155"), 6, 1, Color("#64748b"))
 	var o: Vector2 = r.position
 	var y: float = 14.0
@@ -79,7 +101,10 @@ static func _draw_paste(ci: CanvasItem, r: Rect2) -> void:
 	_box(ci, Rect2(o + Vector2(14, y - 4), Vector2(18, 8)), Color("#94a3b8"), 2)
 	ci.draw_rect(Rect2(o + Vector2(42, y - 1.5), Vector2(8, 3)), Color("#cbd5e1"))
 	_box(ci, Rect2(o + Vector2(50, y - 6), Vector2(4, 12)), Color("#cbd5e1"), 1)
-	_text(ci, Vector2(r.get_center().x, r.end.y - 8), "Macun", 8, Color.WHITE)
+	if d.brand != "":
+		_fit_text(ci, Vector2(r.get_center().x, r.end.y - 8), "%s %s" % [d.brand, d.model], 8, Color.WHITE, r.size.x - 6.0)
+	else:
+		_text(ci, Vector2(r.get_center().x, r.end.y - 8), "Macun", 8, Color.WHITE)
 
 static func _draw_cloth(ci: CanvasItem, r: Rect2) -> void:
 	_shadowed_box(ci, r, Color("#334155"), 6, 1, Color("#64748b"))
@@ -95,7 +120,7 @@ static func _draw_cloth(ci: CanvasItem, r: Rect2) -> void:
 	ci.draw_rect(Rect2(o + Vector2(42, 14), Vector2(8, 5)), Color("#f8fafc"))
 	_text(ci, Vector2(r.get_center().x, r.end.y - 8), "Alkollü Bez", 8, Color.WHITE)
 
-static func _draw_fan(ci: CanvasItem, r: Rect2, angle: float) -> void:
+static func _draw_fan(ci: CanvasItem, d: ComponentData, r: Rect2, angle: float) -> void:
 	_shadowed_box(ci, r, Color("#1e293b"), 8, 2, Color("#334155"))
 	var c: Vector2 = r.get_center()
 	var rad: float = minf(r.size.x, r.size.y) / 2.0 - 6.0
@@ -105,6 +130,9 @@ static func _draw_fan(ci: CanvasItem, r: Rect2, angle: float) -> void:
 	ci.draw_circle(c, rad * 0.3, Color("#0f172a"))
 	ci.draw_arc(c, rad * 0.3, 0.0, TAU, 24, Color("#0284c7"), 1.5, true)
 	ci.draw_circle(c, rad * 0.12, Color("#0ea5e9"))
+	# Marka, sol alt köşede (pervane dairesinin dışında; ortadaki YENİ rozetiyle çakışmaz)
+	if d.brand != "":
+		_fit_text(ci, r.position + Vector2(24, r.size.y - 9), d.brand, 7, Color("#94a3b8"), 34.0)
 
 static func _draw_ram(ci: CanvasItem, d: ComponentData, r: Rect2) -> void:
 	_shadowed_box(ci, r, Color("#1e293b"), 4, 1, Color("#334155"))
@@ -125,15 +153,21 @@ static func _draw_ram(ci: CanvasItem, d: ComponentData, r: Rect2) -> void:
 		ci.draw_line(Vector2(x, contacts.position.y), Vector2(x, contacts.end.y), Color(0, 0, 0, 0.3), 1.0)
 		x += 3.0
 	ci.draw_rect(Rect2(o + Vector2(w * 0.4, h - 12), Vector2(3, 9)), Color("#1e293b"))
-	var board: BoardData = GameManager.current_board
-	var ram_label: String = "%s · %dGB" % [board.ram_type, board.ram_size_gb] if board else "DDR5 · 16GB"
-	_vtext(ci, o + Vector2(w / 2.0, h * 0.62), ram_label, 8, Color("#e2e8f0"))
+	if d.brand != "":
+		# Katalog parçası: iki satır (marka, kapasite + tür); 42 px genişliğe sığması için dikey yazılır
+		var avail: float = h * 0.40
+		_vfit(ci, o + Vector2(w / 2.0 + 5.0, h * 0.62), d.brand, 9, Color.WHITE, avail)
+		_vfit(ci, o + Vector2(w / 2.0 - 6.0, h * 0.62), "%s %s" % [capacity_text(d.capacity_gb), d.ram_type], 8, Color("#e2e8f0"), avail)
+	else:
+		var board: BoardData = GameManager.current_board
+		var ram_label: String = "%s · %dGB" % [board.ram_type, board.ram_size_gb] if board else "DDR5 · 16GB"
+		_vtext(ci, o + Vector2(w / 2.0, h * 0.62), ram_label, 8, Color("#e2e8f0"))
 	if d.is_new:
 		var badge: Rect2 = Rect2(o + Vector2(4, h - 27), Vector2(w - 8, 12))
 		_box(ci, badge, Color("#16a34a"), 2)
 		_text(ci, badge.get_center(), "YENİ", 7, Color.WHITE)
 
-static func _draw_m2(ci: CanvasItem, r: Rect2) -> void:
+static func _draw_m2(ci: CanvasItem, d: ComponentData, r: Rect2) -> void:
 	_shadowed_box(ci, r, Color("#166534"), 3)
 	var o: Vector2 = r.position
 	var h: float = r.size.y
@@ -151,10 +185,14 @@ static func _draw_m2(ci: CanvasItem, r: Rect2) -> void:
 	var nand2: Rect2 = Rect2(o + Vector2(88, 7), Vector2(38, 24))
 	_box(ci, nand1, Color("#111827"), 2)
 	_box(ci, nand2, Color("#111827"), 2)
-	_text(ci, nand1.get_center(), "NVMe", 8, Color("#cbd5e1"))
-	_text(ci, nand2.get_center(), "1TB", 8, Color("#cbd5e1"))
+	if d.brand != "":
+		_fit_text(ci, nand1.get_center(), d.brand, 8, Color("#cbd5e1"), nand1.size.x - 4.0)
+		_fit_text(ci, nand2.get_center(), capacity_text(d.capacity_gb), 8, Color("#cbd5e1"), nand2.size.x - 4.0)
+	else:
+		_text(ci, nand1.get_center(), "NVMe", 8, Color("#cbd5e1"))
+		_text(ci, nand2.get_center(), "1TB", 8, Color("#cbd5e1"))
 
-static func _draw_sata(ci: CanvasItem, r: Rect2) -> void:
+static func _draw_sata(ci: CanvasItem, d: ComponentData, r: Rect2) -> void:
 	_shadowed_box(ci, r, Color("#475569"), 6)
 	UIStyle.draw_diagonal_gradient(ci, r, 6, Color("#64748b"), Color("#1e293b"))
 	_box(ci, r, Color.TRANSPARENT, 6, 1, Color("#64748b"))
@@ -164,7 +202,10 @@ static func _draw_sata(ci: CanvasItem, r: Rect2) -> void:
 	var sticker: Rect2 = Rect2(o + Vector2(12, 14), Vector2(w - 42, r.size.y - 28))
 	_box(ci, sticker, Color("#0f766e"), 4, 1, Color("#2dd4bf"))
 	_text(ci, sticker.get_center() + Vector2(0, -8), "SATA SSD", 12, Color.WHITE)
-	_text(ci, sticker.get_center() + Vector2(0, 10), "1TB · 550 MB/s", 8, Color("#99f6e4"))
+	if d.brand != "":
+		_fit_text(ci, sticker.get_center() + Vector2(0, 10), part_label(d), 9, Color("#99f6e4"), sticker.size.x - 8.0)
+	else:
+		_text(ci, sticker.get_center() + Vector2(0, 10), "1TB · 550 MB/s", 8, Color("#99f6e4"))
 	# Sağ kenardaki güç ve veri konnektörleri (anakarttaki hedeflerle hizalı)
 	for conn: Rect2 in [Rect2(o + Vector2(w - 10, 5), Vector2(8, 44)), Rect2(o + Vector2(w - 10, 57), Vector2(8, 30))]:
 		_box(ci, conn, Color("#111827"), 2)
@@ -176,13 +217,18 @@ static func _draw_sata(ci: CanvasItem, r: Rect2) -> void:
 	for p: Vector2 in [Vector2(7, 7), Vector2(w - 18, 7), Vector2(7, r.size.y - 7), Vector2(w - 18, r.size.y - 7)]:
 		ci.draw_circle(o + p, 2.5, Color("#94a3b8"))
 
-static func _draw_gpu(ci: CanvasItem, r: Rect2, angle: float) -> void:
+static func _draw_gpu(ci: CanvasItem, d: ComponentData, r: Rect2, angle: float) -> void:
 	_shadowed_box(ci, r, Color("#1f2937"), 6)
 	UIStyle.draw_diagonal_gradient(ci, r, 6, Color("#374151"), Color("#111827"))
 	_box(ci, r, Color.TRANSPARENT, 6, 1, Color("#4b5563"))
 	ci.draw_rect(Rect2(r.position + Vector2(6, 2), Vector2(r.size.x - 12, 2)), Color("#a855f7"))
 	var cy: float = r.get_center().y
-	_text(ci, Vector2(r.position.x + 62, cy), "RTX 4070", 12, Color("#e9d5ff"))
+	if d is GPUData and d.brand != "":
+		var gpu: GPUData = d as GPUData
+		_fit_text(ci, Vector2(r.position.x + 62, cy - 7), "%s %s" % [gpu.brand, gpu.model], 11, Color("#e9d5ff"), 104.0)
+		_fit_text(ci, Vector2(r.position.x + 62, cy + 9), "%d GB" % gpu.vram_gb, 9, Color("#c4b5fd"), 104.0)
+	else:
+		_text(ci, Vector2(r.position.x + 62, cy), "RTX 4070", 12, Color("#e9d5ff"))
 	var rad: float = r.size.y / 2.0 - 4.0
 	for i: int in range(3):
 		var c: Vector2 = Vector2(r.position.x + 180 + i * 110, cy + 1)
@@ -191,7 +237,7 @@ static func _draw_gpu(ci: CanvasItem, r: Rect2, angle: float) -> void:
 		ci.draw_circle(c, rad * 0.3, Color("#1f2937"))
 		ci.draw_arc(c, rad, 0.0, TAU, 36, Color("#6b21a8"), 1.5, true)
 
-static func _draw_psu(ci: CanvasItem, r: Rect2, angle: float) -> void:
+static func _draw_psu(ci: CanvasItem, d: ComponentData, r: Rect2, angle: float) -> void:
 	_shadowed_box(ci, r, Color("#374151"), 6)
 	UIStyle.draw_diagonal_gradient(ci, r, 6, Color("#4b5563"), Color("#111827"))
 	_box(ci, r, Color.TRANSPARENT, 6, 2, Color("#6b7280"))
@@ -208,10 +254,15 @@ static func _draw_psu(ci: CanvasItem, r: Rect2, angle: float) -> void:
 		ci.draw_line(c - dir * rad, c + dir * rad, Color("#6b7280"), 1.5, true)
 	ci.draw_circle(c, rad * 0.18, Color("#1f2937"))
 	# Etiketler
-	_text(ci, o + Vector2(150, 44), "750W", 20, Color.WHITE)
 	var badge: Rect2 = Rect2(o + Vector2(118, 60), Vector2(64, 16))
-	_box(ci, badge, Color("#fbbf24"), 3)
-	_text(ci, badge.get_center(), "80+ GOLD", 9, Color("#111827"))
+	if d.brand != "":
+		_fit_text(ci, o + Vector2(150, 44), "%dW" % d.watt, 20, Color.WHITE, 64.0)
+		_box(ci, badge, Color("#fbbf24"), 3)
+		_fit_text(ci, badge.get_center(), d.brand, 9, Color("#111827"), badge.size.x - 6.0)
+	else:
+		_text(ci, o + Vector2(150, 44), "750W", 20, Color.WHITE)
+		_box(ci, badge, Color("#fbbf24"), 3)
+		_text(ci, badge.get_center(), "80+ GOLD", 9, Color("#111827"))
 	# Açma/kapama düğmesi
 	_box(ci, Rect2(o + Vector2(168, 86), Vector2(18, 12)), Color("#111827"), 2)
 	ci.draw_rect(Rect2(o + Vector2(171, 88), Vector2(6, 8)), Color("#ef4444"))
@@ -220,8 +271,8 @@ static func _draw_psu(ci: CanvasItem, r: Rect2, angle: float) -> void:
 		var port: Dictionary = PSU_PORTS[key]
 		var pos: Vector2 = port["pos"]
 		var size: Vector2 = port["size"]
-		var d: Vector2 = port["dir"]
-		var rect: Rect2 = Rect2(o + pos - Vector2(size.x / 2.0, 0), size) if d.y != 0.0 else Rect2(o + pos - Vector2(0, size.y / 2.0), size)
+		var port_dir: Vector2 = port["dir"]
+		var rect: Rect2 = Rect2(o + pos - Vector2(size.x / 2.0, 0), size) if port_dir.y != 0.0 else Rect2(o + pos - Vector2(0, size.y / 2.0), size)
 		_box(ci, rect, Color("#0b0f17"), 2, 1, Color("#9ca3af"))
 
 # Kablo fişi (konnektör gövdesi, pinler, renkli bant)
@@ -293,6 +344,19 @@ static func _text(ci: CanvasItem, center: Vector2, text: String, fs: int, color:
 	var font: Font = UIStyle.ui_font(true)
 	var w: float = font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
 	ci.draw_string(font, center + Vector2(-w / 2.0, (font.get_ascent(fs) - font.get_descent(fs)) / 2.0), text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, color)
+
+# Yazıyı en fazla max_w piksele sığacak şekilde küçülterek (en az 6 punto) ortalar
+static func _fit_text(ci: CanvasItem, center: Vector2, text: String, fs: int, color: Color, max_w: float) -> void:
+	_text(ci, center, text, _fit_size(text, fs, max_w), color)
+
+static func _vfit(ci: CanvasItem, center: Vector2, text: String, fs: int, color: Color, max_len: float) -> void:
+	_vtext(ci, center, text, _fit_size(text, fs, max_len), color)
+
+static func _fit_size(text: String, fs: int, max_w: float) -> int:
+	var font: Font = UIStyle.ui_font(true)
+	while fs > 6 and font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x > max_w:
+		fs -= 1
+	return fs
 
 # 90° döndürülmüş yazı (yukarıdan aşağı okunur)
 static func _vtext(ci: CanvasItem, center: Vector2, text: String, fs: int, color: Color) -> void:
