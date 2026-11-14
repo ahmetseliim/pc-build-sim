@@ -8,11 +8,13 @@ extends Control
 # Dekor (bahşiş ve müşteri). Good Pizza, Great Pizza'daki gün arası alışveriş gibi.
 
 const CATEGORIES: Array = [
+	["dukkan", "Dükkân"],
 	["raf", "Raf"],
 	["alet", "Alet"],
 	["dekor", "Dekor"],
 ]
 const CATEGORY_INFO: Dictionary = {
+	"dukkan": "Dükkânı büyütmek müşteri sayısını artırır, yeni iş ve parça kademeleri açar.",
 	"raf": "Raf yeni iş türü açar. Rafı olmayan işin müşterisi geri döner.",
 	"alet": "Aletler işi kolaylaştırır ve hızlandırır.",
 	"dekor": "Dekor dükkânı güzelleştirir, bahşiş ve müşteri getirir.",
@@ -27,6 +29,7 @@ const RED_TEXT: Color = Color("#f87171")
 @onready var box: VBoxContainer = $Center/Panel/VBox
 
 var _category: String = "raf"
+var _celebrate: String = "" ## Seviye atlanınca "Dükkân" sekmesinde gösterilen kutlama metni
 
 func _ready() -> void:
 	UIStyle.setup_window(get_window())
@@ -80,9 +83,15 @@ func _show_day_summary() -> void:
 	_divider()
 	_row("Kasa", "%d ₺" % CareerManager.money, Color.WHITE, 20)
 	_row("Dükkân itibarı", "★ %.1f  (%d iş)" % [CareerManager.average_stars(), CareerManager.jobs_done], Color("#cbd5e1"))
+	var level: LevelData = CareerManager.current_level_data()
+	if level != null:
+		_row("Dükkân", "Seviye %d  ·  %s" % [level.level, level.title], Color("#cbd5e1"))
 	_spacer(8)
 	var affordable: int = _affordable_count()
+	var can_grow: bool = CareerManager.next_level_data() != null and CareerManager.level_block_reason() == ""
 	var shop_text: String = "Dükkân Mağazası" + ("  ·  %d alınabilir" % affordable if affordable > 0 else "")
+	if can_grow:
+		shop_text = "Dükkân Mağazası  ·  Dükkânı büyütebilirsin!"
 	_button(box, shop_text, _open_shop, AMBER)
 	_button(box, "%d. Güne Başla ▶" % (CareerManager.day + 1), CareerManager.start_next_day, GREEN)
 	_button(box, "Menüye Dön", GameManager.go_to_menu, Color(0.2, 0.2, 0.25, 0.8), true)
@@ -99,6 +108,9 @@ func _affordable_count() -> int:
 func _open_shop() -> void:
 	# Bugün müşteri kaçıran bir eksik varsa mağaza o sekmede açılır
 	_category = "raf"
+	_celebrate = ""
+	if CareerManager.next_level_data() != null and CareerManager.level_block_reason() == "":
+		_category = "dukkan" # Dükkân büyütülebiliyorsa önce o gösterilir
 	for id: String in CareerManager.day_missed_needs:
 		var upgrade: UpgradeData = CareerManager.get_upgrade(id)
 		if upgrade and not CareerManager.has_upgrade(id):
@@ -139,11 +151,14 @@ func _show_shop() -> void:
 	list.add_theme_constant_override("separation", 8)
 	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	scroll.add_child(list)
-	var items: Array[UpgradeData] = CareerManager.catalog(_category)
-	if items.is_empty():
-		_label(list, "Bu bölümde şimdilik bir şey yok.", 14, MUTED, false)
-	for upgrade: UpgradeData in items:
-		list.add_child(_item_card(upgrade))
+	if _category == "dukkan":
+		list.add_child(_level_card())
+	else:
+		var items: Array[UpgradeData] = CareerManager.catalog(_category)
+		if items.is_empty():
+			_label(list, "Bu bölümde şimdilik bir şey yok.", 14, MUTED, false)
+		for upgrade: UpgradeData in items:
+			list.add_child(_item_card(upgrade))
 	# Liste ekrana sığmazsa kaydırılır; sığarsa boş alan bırakmaz
 	await get_tree().process_frame
 	if is_instance_valid(scroll):
@@ -161,6 +176,7 @@ func _show_shop() -> void:
 
 func _select_category(key: String) -> void:
 	_category = key
+	_celebrate = ""
 	_show_shop()
 
 func _item_card(upgrade: UpgradeData) -> PanelContainer:
@@ -200,6 +216,88 @@ func _item_card(upgrade: UpgradeData) -> PanelContainer:
 		var why: Label = _label(side, reason, 11, RED_TEXT if reason.begins_with("Kasada") else MUTED, false)
 		why.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	return card
+
+# "Dükkânı büyüt" kartı: sonraki seviyenin adı, bedeli, şartları (eksik olan kırmızı), açacakları ve alım düğmesi
+func _level_card() -> PanelContainer:
+	var current: LevelData = CareerManager.current_level_data()
+	var next: LevelData = CareerManager.next_level_data()
+	var card: PanelContainer = PanelContainer.new()
+	var glow: bool = _celebrate != "" or (next != null and CareerManager.level_block_reason() == "")
+	var style: StyleBoxFlat = UIStyle.box(Color(1, 1, 1, 0.06), 12, 2, GOLD_TEXT if glow else Color(1, 1, 1, 0.18))
+	style.set_content_margin_all(14)
+	card.add_theme_stylebox_override("panel", style)
+	var col: VBoxContainer = VBoxContainer.new()
+	col.add_theme_constant_override("separation", 6)
+	card.add_child(col)
+	if _celebrate != "":
+		var party: Label = _label(col, _celebrate, 17, GOLD_TEXT, true)
+		party.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		party.custom_minimum_size.x = 440.0 * _ui()
+	_label(col, "Dükkânı büyüt", 12, Color("#e2b083"), true)
+	if current != null:
+		_label(col, "Şimdi: Seviye %d  ·  %s" % [current.level, current.title], 13, MUTED, false)
+	if next == null:
+		_label(col, "En üst seviyedesin. Tebrikler!", 18, GREEN, true)
+		return card
+	_label(col, "Seviye %d  ·  %s" % [next.level, next.title], 20, Color.WHITE, true)
+
+	var cols: HBoxContainer = HBoxContainer.new()
+	cols.add_theme_constant_override("separation", 18)
+	col.add_child(cols)
+	# Sol: bedel ve şartlar (eksik olan kırmızı)
+	var need: VBoxContainer = VBoxContainer.new()
+	need.add_theme_constant_override("separation", 3)
+	need.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	need.custom_minimum_size.x = 210.0 * _ui()
+	cols.add_child(need)
+	_label(need, "Şartlar", 12, Color("#e2b083"), true)
+	_need_line(need, "%d iş  (şimdi %d)" % [next.required_jobs, CareerManager.jobs_done], CareerManager.jobs_done >= next.required_jobs)
+	if next.required_stars > 0.0:
+		_need_line(need, "★ %.1f itibar  (şimdi ★ %.1f)" % [next.required_stars, CareerManager.average_stars()], CareerManager.average_stars() >= next.required_stars)
+	_need_line(need, "%s ₺ kasada  (şimdi %s ₺)" % [_fmt(next.price), _fmt(CareerManager.money)], CareerManager.money >= next.price)
+	# Sağ: açılanlar
+	var gains: VBoxContainer = VBoxContainer.new()
+	gains.add_theme_constant_override("separation", 3)
+	gains.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	gains.custom_minimum_size.x = 240.0 * _ui()
+	cols.add_child(gains)
+	_label(gains, "Açılanlar", 12, Color("#e2b083"), true)
+	for text: String in next.unlocks:
+		var line: Label = _label(gains, "•  " + text, 12, Color("#cbd5e1"), false)
+		line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		line.custom_minimum_size.x = 230.0 * _ui()
+
+	var reason: String = CareerManager.level_block_reason()
+	var buy: Button = _button(col, "Dükkânı büyüt  ·  %s ₺" % _fmt(next.price), _buy_level, GREEN)
+	buy.disabled = reason != ""
+	if reason != "":
+		var why: Label = _label(col, reason, 12, RED_TEXT if reason.begins_with("Kasada") else MUTED, false)
+		why.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	return card
+
+func _need_line(parent: Control, text: String, ok: bool) -> void:
+	var line: Label = _label(parent, ("✓  " if ok else "✗  ") + text, 13, GREEN if ok else RED_TEXT, true)
+	line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	line.custom_minimum_size.x = 200.0 * _ui()
+
+# 4000 -> "4.000"
+func _fmt(n: int) -> String:
+	var digits: String = str(absi(n))
+	var out: String = ""
+	for i: int in range(digits.length()):
+		if i > 0 and (digits.length() - i) % 3 == 0:
+			out += "."
+		out += digits[i]
+	return ("-" if n < 0 else "") + out
+
+func _buy_level() -> void:
+	if CareerManager.buy_level():
+		AudioManager.play_sfx("coin")
+		AudioManager.play_sfx("done")
+		var now: LevelData = CareerManager.current_level_data()
+		_celebrate = "★ Tebrikler! Artık bir %s var. ★" % now.title
+		_category = "dukkan"
+		_show_shop()
 
 func _buy(upgrade: UpgradeData) -> void:
 	if CareerManager.buy_upgrade(upgrade):

@@ -5,6 +5,7 @@
 [resource]
 script = ExtResource("1_scenario")
 title = "Hiç Tepki Yok (Güç Kaynağı Değişimi)"
+symptom_title = "Hiç Tepki Vermiyor"
 shop_stage = 1
 price = 550
 customer = "Hakan Bey"

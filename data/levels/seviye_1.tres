@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="LevelData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/resources/LevelData.gd" id="1_level"]
+
+[resource]
+script = ExtResource("1_level")
+level = 1
+title = "Köşe tamircisi"
+price = 0
+required_jobs = 0
+required_stars = 0.0
+daily_customers = 3
+background = "res://assets/shop/shop_back.png"
+unlocks = []

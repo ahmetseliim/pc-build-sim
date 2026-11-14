@@ -13,6 +13,9 @@ extends Resource
 ## Müşterinin söyleyebileceği şikâyetler (genelde 3). Doluysa iş her hazırlanışında biri rastgele seçilir (complaint yok sayılır);
 ## tezgâh ve iş emri aynı metni gösterir (GameManager.get_complaint)
 @export var complaints: Array[String] = []
+## İş emri kartında (kariyer, dükkân seviyesi 2 ve üstü) gösterilen belirsiz başlık: yalnız belirtiyi söyler, teşhisi BIOS'tan yapılır.
+## Boşsa ya da seviye 1'de `title` gösterilir (GameManager.order_title)
+@export var symptom_title: String = ""
 @export_multiline var menu_description: String = ""
 @export_multiline var hint: String = "" ## İş emri kartında gösterilen ipucu
 ## Bu işi kabul etmek için gereken dükkân alımı (data/upgrades/*.tres id'si, örn. "raf_ssd"). Boşsa her zaman yapılabilir.

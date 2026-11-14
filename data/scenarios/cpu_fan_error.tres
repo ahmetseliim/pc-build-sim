@@ -5,6 +5,7 @@
 [resource]
 script = ExtResource("1_scenario")
 title = "CPU Fan Error"
+symptom_title = "Açılışta Uyarı Veriyor"
 shop_stage = 1
 price = 150
 customer = "Burak Bey"

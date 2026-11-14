@@ -11,4 +11,5 @@ price = 6000
 effect = "Ekran kartı değişimi işlerini kabul edebilirsin. Rafın yoksa bu müşteriler geri döner."
 required_jobs = 30
 required_stars = 3.5
+required_level = 3
 order = 40

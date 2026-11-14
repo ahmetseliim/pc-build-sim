@@ -5,6 +5,7 @@
 [resource]
 script = ExtResource("1_scenario")
 title = "Windows Açılmıyor (Ölü SSD)"
+symptom_title = "Windows Açılmıyor"
 shop_stage = 1
 price = 600
 customer = "Selin Hanım"

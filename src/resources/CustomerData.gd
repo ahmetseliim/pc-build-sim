@@ -16,3 +16,5 @@ extends Resource
 @export var thanks_line: String = "" ## Memnun kalınca söylediği kendine özgü söz
 ## Bütçe tipi: "dar" (×0,8), "orta" (×1,0), "genis" (×1,6). Parça teklifinde müşterinin bütçesini ve tepkisini belirler (PartOffer)
 @export_enum("dar", "orta", "genis") var budget_type: String = "orta"
+## Bu müşteri hangi dükkân seviyesinden itibaren gelir (1: baştan)
+@export var min_shop_level: int = 1

@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="UpgradeData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/resources/UpgradeData.gd" id="1_upgrade"]
+
+[resource]
+script = ExtResource("1_upgrade")
+id = "ikinci_tabure"
+title = "İkinci Tabure"
+category = "dekor"
+price = 800
+effect = "Sadece görünüm: dükkâna ikinci bir tabure."
+required_level = 1
+order = 40

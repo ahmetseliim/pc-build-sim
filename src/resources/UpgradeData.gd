@@ -15,4 +15,5 @@ extends Resource
 @export_multiline var effect: String = "" ## Mağazada gösterilen tek cümlelik etki
 @export var required_jobs: int = 0 ## Satın almak için gereken toplam iş
 @export var required_stars: float = 0.0 ## Satın almak için gereken dükkân itibarı
+@export var required_level: int = 1 ## Satın almak için gereken dükkân seviyesi (1-4)
 @export var order: int = 0 ## Mağazadaki sıra (küçük önce)

@@ -5,6 +5,7 @@
 [resource]
 script = ExtResource("1_scenario")
 title = "Yer Kalmadı (İkinci Disk)"
+symptom_title = "Yer Kalmadı"
 shop_stage = 1
 price = 350
 customer = "Kerem Bey"

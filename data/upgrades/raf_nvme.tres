@@ -11,4 +11,5 @@ price = 2500
 effect = "NVMe yükseltme işlerini kabul edebilirsin. Rafın yoksa bu müşteriler geri döner."
 required_jobs = 10
 required_stars = 3.0
+required_level = 2
 order = 20

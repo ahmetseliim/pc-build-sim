@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="LevelData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/resources/LevelData.gd" id="1_level"]
+
+[resource]
+script = ExtResource("1_level")
+level = 3
+title = "Montaj atölyesi"
+price = 14000
+required_jobs = 35
+required_stars = 3.5
+daily_customers = 6
+background = "res://assets/shop/shop_back_s3.png"
+unlocks = Array[String](["Günde 6 müşteri", "Üst kademe parçalar", "Ekran kartı rafı açılır", "İkinci sandalye alınabilir", "Daha geniş dükkân görünümü"])

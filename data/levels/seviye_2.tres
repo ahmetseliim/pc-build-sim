@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="LevelData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/resources/LevelData.gd" id="1_level"]
+
+[resource]
+script = ExtResource("1_level")
+level = 2
+title = "Mahalle dükkânı"
+price = 4000
+required_jobs = 12
+required_stars = 3.0
+daily_customers = 5
+background = "res://assets/shop/shop_back_s2.png"
+unlocks = Array[String](["Günde 5 müşteri", "12 iş türünün hepsi gelir", "Dengeli kademe parçalar", "NVMe ve güç kaynağı rafları açılır", "Belirsiz iş emri başlıkları: teşhis BIOS'tan", "Işıklı tabela ve vitrin ışığı alınabilir"])

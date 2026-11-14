@@ -5,6 +5,7 @@
 [resource]
 script = ExtResource("1_scenario")
 title = "Termal Macun Yenileme"
+symptom_title = "Çok Isınıyor, Fan Uğulduyor"
 shop_stage = 1
 price = 500
 customer = "Elif Hanım"

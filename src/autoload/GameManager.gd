@@ -176,6 +176,12 @@ func _pick_loose_parts(scenario: ScenarioData) -> void:
 		scenario_loose.append(pool[i])
 		scenario_inventory.append(pool[i])
 
+# İş emri kartındaki başlık: kariyerde dükkân seviyesi 2 ve üstünde, `symptom_title` doluysa yalnız belirti yazılır (teşhis BIOS'tan yapılır)
+func order_title(scenario: ScenarioData) -> String:
+	if scenario.symptom_title != "" and CareerManager.is_career and CareerManager.shop_level >= CareerManager.VAGUE_TITLE_LEVEL:
+		return scenario.symptom_title
+	return scenario.title
+
 # Müşterinin şikâyeti: senaryonun şikâyet listesinden (iş hazırlanırken atılan zarla) biri, yoksa tek şikâyet metni, yoksa bozuk kabloya göre
 func get_complaint() -> String:
 	if current_scenario == null:

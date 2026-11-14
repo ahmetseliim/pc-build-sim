@@ -19,8 +19,8 @@ const TOLERANCE: float = 0.15 ## Orta ve geniş müşteri bütçeyi bu orana kad
 const HAPPY_TIP_BONUS: float = 0.05 ## Mutlu seçimde bahşiş oranına eklenir
 const USED_BRAND: String = "Demirci" ## Çıkma (ikinci el) parçaların markası
 const FAULTY_CHANCE: float = 0.2 ## Çıkma parçanın arızalı gelme ihtimali
-## Teklifte listelenebilecek en yüksek raf seviyesi. Raf seviyeleri (P5) gelene kadar hepsi açık.
-const SHELF_LEVEL: int = 3
+## Kariyer dışı (Test menüsü) işlerde kullanılan raf seviyesi: hepsi açık. Kariyerde `CareerManager.shelf_level()` dükkân seviyesinden gelir.
+const MAX_SHELF_LEVEL: int = 3
 const TIER_NAMES: Dictionary = {1: "EKONOMİK", 2: "DENGELİ", 3: "ÜST"}
 const USED_NAME: String = "ÇIKMA"
 
@@ -62,14 +62,24 @@ static func spend_limit(budget_type: String, budget: int) -> int:
 # Teklif kartındaki seçenekler: işin parça türünden, gelen kartın kabul ettiği (uyumlu) katalog parçaları.
 # Kademe 1-2-3'ten birer yeni parça (kademede birden çok varsa katalog sırasındaki ilki: ucuz, sonra id) + varsa çıkma.
 # Uyumsuz parça listelenmez. `board` null olursa kart kısıtı uygulanmaz.
-static func options(scenario: ScenarioData, board: BoardData) -> Array[Dictionary]:
+# `shelf_level`: listelenebilecek en yüksek kademe (dükkân seviyesine bağlı). O kademede karta uyan parça yoksa
+# kart boş kalmasın diye bir üst kademeye çıkılır.
+static func options(scenario: ScenarioData, board: BoardData, shelf_level: int = MAX_SHELF_LEVEL) -> Array[Dictionary]:
 	var result: Array[Dictionary] = []
 	if scenario == null or scenario.offer_part_type == "":
 		return result
+	for level: int in range(clampi(shelf_level, 1, MAX_SHELF_LEVEL), MAX_SHELF_LEVEL + 1):
+		result = _options_at(scenario, board, level)
+		if not result.is_empty():
+			break
+	return result
+
+static func _options_at(scenario: ScenarioData, board: BoardData, shelf_level: int) -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
 	var type: String = scenario.offer_part_type
 	var picked_tiers: Dictionary = {}
 	var used_part: ComponentData = null
-	for part: ComponentData in InventoryManager.catalog_parts(type, SHELF_LEVEL):
+	for part: ComponentData in InventoryManager.catalog_parts(type, shelf_level):
 		if not _fits_board(part, type, board):
 			continue
 		if is_used(part):

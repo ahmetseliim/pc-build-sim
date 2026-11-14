@@ -11,4 +11,5 @@ price = 3500
 effect = "Güç kaynağı değişimi işlerini kabul edebilirsin. Rafın yoksa bu müşteriler geri döner."
 required_jobs = 16
 required_stars = 3.0
+required_level = 2
 order = 30

@@ -5,6 +5,7 @@
 [resource]
 script = ExtResource("1_scenario")
 title = "Arızalı Kablo"
+symptom_title = "Bilgisayar Açılmıyor"
 shop_stage = 1
 price = 250
 customer = "Mert Bey"

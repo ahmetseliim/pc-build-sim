@@ -67,13 +67,22 @@ const SIGN_TEXTS: Array = [
 	["SSD", Vector2(1814, 606), 16, Color("#1E1A17")],
 ]
 const TILL_POS: Vector2 = Vector2(1653, 712) ## Yazar kasa ekranı (kasadaki parayı gösterir)
-## Satın alınınca tezgâhın üstünde görünen dekorlar: alım id'si -> [görsel, tezgâh üstündeki alt orta nokta, genişlik]
+## Satın alınınca dükkânda görünen dekorlar: alım id'si -> [görsel, alt orta nokta, genişlik, katman].
+## Katman "front": tezgâhın önündeki katmanın üstü (tezgâh üstü, müşterilerin önü); "back": arka planın hemen üstü (duvar, müşterilerin arkası).
+## Görsel dosyası yoksa (henüz üretilmediyse) dekor sessizce atlanır. Yeni dekor görseli: assets/shop/dekor/<id>.png.
+## Konumlar dünya koordinatlarındadır (1920×1080); görseller gelince gözle ayarlanacak.
 const COUNTER_DECOR: Dictionary = {
-	"cay_ocagi": ["res://assets/shop/cay_ocagi.png", Vector2(800, 852), 200.0],
+	"cay_ocagi": ["res://assets/shop/cay_ocagi.png", Vector2(800, 852), 200.0, "front"],
+	"saksi": ["res://assets/shop/dekor/saksi.png", Vector2(1150, 852), 130.0, "front"],
+	"ikinci_tabure": ["res://assets/shop/dekor/ikinci_tabure.png", Vector2(330, 790), 150.0, "back"],
+	"ikinci_sandalye": ["res://assets/shop/dekor/ikinci_sandalye.png", Vector2(1500, 790), 190.0, "back"],
+	"isikli_tabela": ["res://assets/shop/dekor/isikli_tabela.png", Vector2(1095, 540), 240.0, "back"],
+	"vitrin_isigi": ["res://assets/shop/dekor/vitrin_isigi.png", Vector2(1600, 60), 380.0, "back"],
 }
 
 @onready var backdrop: ColorRect = $Backdrop
 @onready var world: Node2D = $World
+@onready var back: Sprite2D = $World/Back
 @onready var signs: Node2D = $World/Signs
 @onready var crowd: Node2D = $World/Crowd
 @onready var front: Sprite2D = $World/Front
@@ -107,6 +116,7 @@ func _ready() -> void:
 	if CareerManager.day_queue.is_empty():
 		GameManager.go_to_menu()
 		return
+	_apply_background()
 	_build_signs()
 	_build_decor()
 	_build_ui()
@@ -157,6 +167,16 @@ func _build_signs() -> void:
 		_world_label(entry[0], entry[1], entry[2], entry[3])
 	_till_label = _world_label("", TILL_POS, 26, INK)
 
+# Seviyeye özel arka plan (assets/shop/shop_back_s<seviye>.png); dosya yoksa sahnedeki varsayılan shop_back.png kalır.
+# Kariyer dışında (Test menüsü) seviye 1 görünür.
+func _apply_background() -> void:
+	var data: LevelData = CareerManager.current_level_data() if CareerManager.is_career else null
+	if data == null or data.background == "" or not ResourceLoader.exists(data.background):
+		return
+	var texture: Texture2D = load(data.background) as Texture2D
+	if texture != null:
+		back.texture = texture
+
 # Alınan dekorlar tezgâhın önündeki katmanın üstüne konur (Good Pizza'daki gibi alım dükkânda görünür)
 func _build_decor() -> void:
 	for id: String in COUNTER_DECOR:
@@ -172,7 +192,8 @@ func _build_decor() -> void:
 		sprite.position = Vector2(entry[1]) - Vector2(tex_size.x * s / 2.0, tex_size.y * s)
 		sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 		world.add_child(sprite)
-		world.move_child(sprite, front.get_index() + 1)
+		var behind: bool = entry.size() > 3 and entry[3] == "back"
+		world.move_child(sprite, back.get_index() + 1 if behind else front.get_index() + 1)
 
 func _world_label(text: String, bottom_center: Vector2, font_size: int, color: Color) -> Label:
 	var label: Label = Label.new()

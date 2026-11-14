@@ -11,11 +11,21 @@ extends Node
 # işin müşterisi gider ve gün sonunda "kaçan kazanç" olarak görünür.
 
 const SAVE_PATH: String = "user://kariyer.json"
-const SAVE_VERSION: int = 5 ## 5: tezgâh parça teklifi (offer, day_part_sales, day_part_cost); 3 ve 4 numaralı kayıtlar .get varsayılanlarıyla açılır
+const SAVE_VERSION: int = 6 ## 6: dükkân seviyesi (shop_level); 5: tezgâh parça teklifi (offer, day_part_sales, day_part_cost); 3, 4 ve 5 numaralı kayıtlar .get varsayılanlarıyla açılır (seviye 1)
 const RESULT_SCENE: String = "res://src/scenes/ui/ResultScreen.tscn" ## Gün sonu özeti
 const COUNTER_SCENE: String = "res://src/scenes/counter/Counter.tscn"
 const CUSTOMERS_DIR: String = "res://data/customers/"
 const UPGRADES_DIR: String = "res://data/upgrades/"
+const LEVELS_DIR: String = "res://data/levels/"
+const MAX_LEVEL: int = 4
+const VAGUE_TITLE_LEVEL: int = 2 ## Bu seviyeden itibaren iş emri başlığı yalnız belirtiyi söyler (ScenarioData.symptom_title)
+## Seviyeye göre parça kademesi sınırı (dizin: seviye - 1): seviye 1 yalnız ekonomik, 2 dengeliye kadar, 3-4 hepsi
+const SHELF_BY_LEVEL: Array[int] = [1, 2, 3, 3]
+const EXTRA_CUSTOMER_CHANCE: float = 0.5 ## Her "müşteri getiren" dekorun günde +1 müşteri getirme ihtimali
+## Günde +1 müşteri ihtimali veren dekorlar (Işıklı tabela, İkinci sandalye)
+const EXTRA_CUSTOMER_DECOR: Array[String] = ["isikli_tabela", "ikinci_sandalye"]
+## Memnun müşterinin bahşiş oranına eklenen dekor etkileri (Çay ocağı TEA_TIP_BONUS ayrıdır)
+const TIP_DECOR_BONUS: Dictionary = {"vitrin_isigi": 0.05}
 
 const MISTAKE_PENALTY: float = 0.10 ## Her hata ücretten %10 keser
 const MIN_PAY_RATIO: float = 0.5 ## Ücretin en az yarısı ödenir
@@ -53,7 +63,9 @@ const PLANNED_DAYS: Array = [
 	[RAM, CABLE, FAN],
 	[PASTE, SSD, RAM],
 ]
-## Planlı günlerden sonra rastgele seçilen tamir işleri (13 iş; rafı gereken işler rafı alınmadıkça günde en fazla bir müşteri gelir)
+## Dükkân seviyesi 1'de gelen işler (bugünkü havuz: ilk 5 iş türü + başta açık 7. ve 8. işler). Seviye 2'den itibaren tüm CAREER_POOL gelir.
+const LEVEL1_POOL: Array[String] = [FAN, CABLE, RAM, PASTE, SSD, RAM_UPGRADE, LOOSE]
+## Planlı günlerden sonra rastgele seçilen tamir işleri (12 iş; rafı gereken işler rafı alınmadıkça günde en fazla bir müşteri gelir)
 const CAREER_POOL: Array[String] = [
 	FAN, CABLE, RAM, PASTE, SSD,
 	RAM_UPGRADE, LOOSE, SECOND_DISK, NVME, PSU_SWAP, GPU_SWAP, REVIVE,
@@ -80,8 +92,11 @@ var day_part_sales: int = 0 ## Bugün müşteriye satılan parçaların satış 
 var day_part_cost: int = 0 ## Bugün tedarikçiye ödenen parça alış bedeli (kasadan alım anında düşer)
 var day_missed_needs: Array[String] = [] ## Bugün eksik kalan alımların id'leri (mağazada vurgulanır)
 var owned_upgrades: Array[String] = [] ## Satın alınan dükkân alımlarının id'leri
+var shop_level: int = 1 ## Dükkân seviyesi (1-4, LevelData); eski kayıtlar 1 olarak açılır
 
 var _catalog: Array[UpgradeData] = []
+var _levels: Array[LevelData] = []
+var _customer_levels: Dictionary = {} ## müşteri yolu -> min_shop_level (önbellek)
 
 # Aktif işin takibi
 var mistakes: Dictionary = {} ## hata türü -> adet
@@ -99,6 +114,7 @@ func _ready() -> void:
 	EventBus.mistake_made.connect(record_mistake)
 	EventBus.boot_failed.connect(_on_boot_failed)
 	_load_catalog()
+	_load_levels()
 	GameManager.job_hook = _apply_offer_to_job
 
 # --- Kariyer akışı -----------------------------------------------------------
@@ -112,6 +128,7 @@ func new_game() -> void:
 	jobs_done = 0
 	star_total = 0
 	owned_upgrades.clear()
+	shop_level = 1
 	_clear_job()
 	_begin_day()
 	save_game()
@@ -217,6 +234,9 @@ func tip_for(price: int, stars: int, bonus: float = 0.0, mult: float = 1.0) -> i
 		rate += bonus
 		if effect_active("cay_ocagi"):
 			rate += TEA_TIP_BONUS
+		for id: String in TIP_DECOR_BONUS:
+			if effect_active(id):
+				rate += float(TIP_DECOR_BONUS[id])
 	return int(round(price * rate * mult))
 
 # Sıradaki işin gerektirdiği alım eksik mi (rafta parça yok)
@@ -261,7 +281,13 @@ func offer_budget() -> int:
 
 # Teklif kartındaki seçenekler (gelen anakarta uyan parçalar)
 func offer_options() -> Array[Dictionary]:
-	return PartOffer.options(current_scenario(), GameManager.current_board)
+	return PartOffer.options(current_scenario(), GameManager.current_board, shelf_level())
+
+# Listelenebilecek en yüksek parça kademesi: kariyerde dükkân seviyesine bağlı, Test menüsündeki işlerde hepsi açık
+func shelf_level() -> int:
+	if not is_career:
+		return PartOffer.MAX_SHELF_LEVEL
+	return SHELF_BY_LEVEL[clampi(shop_level, 1, MAX_LEVEL) - 1]
 
 # Seçeneğin kasadan alınamama nedeni (alınabiliyorsa boş)
 func offer_block_reason(option: Dictionary) -> String:
@@ -380,6 +406,17 @@ func _load_catalog() -> void:
 	_catalog.sort_custom(func(a: UpgradeData, b: UpgradeData) -> bool:
 		return a.order < b.order if a.order != b.order else a.price < b.price)
 
+func _load_levels() -> void:
+	_levels.clear()
+	for file: String in DirAccess.get_files_at(LEVELS_DIR):
+		file = file.trim_suffix(".remap")
+		if not file.ends_with(".tres"):
+			continue
+		var data: LevelData = load(LEVELS_DIR + file) as LevelData
+		if data != null and data.level >= 1:
+			_levels.append(data)
+	_levels.sort_custom(func(a: LevelData, b: LevelData) -> bool: return a.level < b.level)
+
 func catalog(category: String = "") -> Array[UpgradeData]:
 	if category == "":
 		return _catalog.duplicate()
@@ -405,6 +442,9 @@ func screw_speed_multiplier() -> float:
 func purchase_block_reason(upgrade: UpgradeData) -> String:
 	if has_upgrade(upgrade.id):
 		return "Alındı"
+	if shop_level < upgrade.required_level:
+		var needed: LevelData = level_data(upgrade.required_level)
+		return "Seviye %d: %s gerekli" % [upgrade.required_level, needed.title if needed else ""]
 	if jobs_done < upgrade.required_jobs:
 		return "%d iş gerekli" % upgrade.required_jobs
 	if upgrade.required_stars > 0.0 and average_stars() < upgrade.required_stars:
@@ -412,6 +452,66 @@ func purchase_block_reason(upgrade: UpgradeData) -> String:
 	if money < upgrade.price:
 		return "Kasada %d ₺ eksik" % (upgrade.price - money)
 	return ""
+
+# --- Dükkân seviyesi ---------------------------------------------------------
+
+# Seviyenin verisi (yoksa null)
+func level_data(level: int) -> LevelData:
+	for data: LevelData in _levels:
+		if data.level == level:
+			return data
+	return null
+
+func current_level_data() -> LevelData:
+	return level_data(shop_level)
+
+# Sonraki seviyenin verisi; son seviyedeyse null
+func next_level_data() -> LevelData:
+	return level_data(shop_level + 1)
+
+# Seviye atlanamıyorsa nedeni, atlanabiliyorsa boş metin (purchase_block_reason gibi)
+func level_block_reason() -> String:
+	var next: LevelData = next_level_data()
+	if next == null:
+		return "En üst seviyedesin"
+	if jobs_done < next.required_jobs:
+		return "%d iş gerekli" % next.required_jobs
+	if next.required_stars > 0.0 and average_stars() < next.required_stars:
+		return "★ %.1f itibar gerekli" % next.required_stars
+	if money < next.price:
+		return "Kasada %d ₺ eksik" % (next.price - money)
+	return ""
+
+# Seviye atla: şartlar ve para kontrol edilir, bedel kasadan düşer, alım anında kaydedilir.
+# Yeni seviyenin müşteri sayısı ve iş havuzu bir sonraki günden geçerlidir (bugünkü kuyruk değişmez).
+func buy_level() -> bool:
+	var next: LevelData = next_level_data()
+	if next == null or level_block_reason() != "":
+		return false
+	money -= next.price
+	shop_level = next.level
+	save_game()
+	EventBus.career_updated.emit()
+	return true
+
+# Dükkân seviyesine göre bir günde gelen sabit müşteri sayısı. Seviye 1'de bugünkü kural: 1. gün 2, sonra 3, 5. günden itibaren 4.
+func base_customer_count(for_day: int, level: int) -> int:
+	if level <= 1:
+		return 2 if for_day == 1 else (3 if for_day < 5 else 4)
+	var data: LevelData = level_data(level)
+	return data.daily_customers if data != null else 3
+
+# Günde +1 müşteri ihtimali veren etkin dekor sayısı (her biri EXTRA_CUSTOMER_CHANCE ile +1)
+func extra_customer_sources() -> int:
+	var n: int = 0
+	for id: String in EXTRA_CUSTOMER_DECOR:
+		if effect_active(id):
+			n += 1
+	return n
+
+# Seviyeye göre iş havuzu: seviye 1'de yalnız bugünkü havuz, 2'den itibaren hepsi
+func level_pool() -> Array[String]:
+	return LEVEL1_POOL if shop_level <= 1 else CAREER_POOL
 
 func buy_upgrade(upgrade: UpgradeData) -> bool:
 	if upgrade == null or purchase_block_reason(upgrade) != "":
@@ -476,16 +576,20 @@ func _begin_day() -> void:
 	offer.clear()
 	day_missed_needs.clear()
 	day_queue.clear()
-	if day <= PLANNED_DAYS.size():
+	# Planlı ilk günler yalnız seviye 1'de; sonrası seviyeye göre sabit sayı + dekorların +1 müşteri ihtimali
+	if day <= PLANNED_DAYS.size() and shop_level <= 1:
 		for path: String in PLANNED_DAYS[day - 1]:
 			day_queue.append(path)
 		_assign_customers()
 		return
-	var count: int = 3 if day < 5 else 4
+	var count: int = base_customer_count(day, shop_level)
+	for i: int in range(extra_customer_sources()):
+		if randf() < EXTRA_CUSTOMER_CHANCE:
+			count += 1
 	# Yalnız yapılabilen işler gelir; rafı alınmamış işten günde en fazla bir müşteri
 	var open_pool: Array[String] = []
 	var locked_pool: Array[String] = []
-	for path: String in CAREER_POOL:
+	for path: String in level_pool():
 		if _job_open(path):
 			open_pool.append(path)
 		else:
@@ -505,15 +609,28 @@ func _job_open(path: String) -> bool:
 	var scenario: ScenarioData = load(path) as ScenarioData
 	return scenario != null and (scenario.required_upgrade == "" or has_upgrade(scenario.required_upgrade))
 
+# Müşterinin gelmeye başladığı dükkân seviyesi (görselleri her gün yeniden yüklememek için bir kez okunur)
+func _customer_min_level(path: String) -> int:
+	if not _customer_levels.has(path):
+		var customer: CustomerData = load(path) as CustomerData
+		_customer_levels[path] = customer.min_shop_level if customer != null else 1
+	return _customer_levels[path]
+
 # Günün her işine farklı bir müşteri karakteri atanır
 func _assign_customers() -> void:
 	day_customers.clear()
 	var pool: Array[String] = []
+	var all_customers: Array[String] = []
 	for file: String in DirAccess.get_files_at(CUSTOMERS_DIR):
 		# Dışa aktarılmış oyunda dosyalar ".remap" uzantılı listelenir
 		file = file.trim_suffix(".remap")
 		if file.ends_with(".tres"):
-			pool.append(CUSTOMERS_DIR + file)
+			all_customers.append(CUSTOMERS_DIR + file)
+			# Yeni karakterler yalnız yeterli dükkân seviyesinden itibaren gelir
+			if _customer_min_level(CUSTOMERS_DIR + file) <= shop_level:
+				pool.append(CUSTOMERS_DIR + file)
+	if pool.is_empty():
+		pool.append_array(all_customers) # Hiçbiri uygun değilse (olmamalı) hepsinden atanır
 	pool.shuffle()
 	for i: int in range(day_queue.size()):
 		day_customers.append(pool[i % pool.size()])
@@ -530,7 +647,7 @@ func save_game() -> void:
 		"day_earned": day_earned, "day_star_total": day_star_total, "day_jobs": day_jobs,
 		"day_tips": day_tips, "day_missed": day_missed, "day_lost": day_lost, "day_missed_needs": day_missed_needs,
 		"day_part_sales": day_part_sales, "day_part_cost": day_part_cost, "offer": offer,
-		"owned_upgrades": owned_upgrades,
+		"owned_upgrades": owned_upgrades, "shop_level": shop_level,
 	}
 	# Önce geçici dosyaya yazılır: yarım kalan yazım eski kaydı bozmasın
 	var temp_path: String = SAVE_PATH + ".tmp"
@@ -558,6 +675,8 @@ func load_game() -> bool:
 	if typeof(data) != TYPE_DICTIONARY:
 		return false
 	money = int(data.get("money", 0))
+	# 6 öncesi kayıtlarda seviye yoktur: seviye 1 olarak açılır
+	shop_level = clampi(int(data.get("shop_level", 1)), 1, maxi(MAX_LEVEL, 1))
 	day = int(data.get("day", 1))
 	job_index = int(data.get("job_index", 0))
 	day_queue.clear()

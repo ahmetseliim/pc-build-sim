@@ -5,6 +5,7 @@
 [resource]
 script = ExtResource("1_scenario")
 title = "Bip Sesi ve Arızalı RAM"
+symptom_title = "Garip Bip Sesi Çıkarıyor"
 shop_stage = 1
 price = 400
 customer = "Kemal Usta"

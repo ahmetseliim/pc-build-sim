@@ -29,7 +29,8 @@ Proje dizin yapısı ve açıklamaları:
   Yumuşak 2D stilde Codex ile üretildi; istemler ve üretim betikleri depo dışında `gorsel-uretim/tam/`. Eski SVG'ler kullanılmıyor.
   Tezgâhta müşteri büyük (`COUNTER_SCALE`), tezgâhın arkasından yükselir/iner (`CustomerWalker.rise_in/sink_out`), konuşurken ağız oynar,
   4–5 yıldızda mutlu, 1–2 yıldızda ve rafsız işte kırgın yüz (`set_mood`). Balon yüzün yanında, geniş tarafta (`Counter._layout_bubble`).
-  Satın alınan dekor tezgâhta görünür (`Counter.COUNTER_DECOR`, şimdilik çay ocağı). Dükkân arka planı ve tezgâh önü `assets/shop/*.png`; tabela yazıları `SIGN_TEXTS` ile üstüne konur.
+  Satın alınan dekor tezgâhta görünür (`Counter.COUNTER_DECOR`: çay ocağı, saksı, ikinci tabure, ikinci sandalye, ışıklı tabela, vitrin ışığı; yeni dekor PNG'si `assets/shop/dekor/<id>.png`, dosya yoksa `ResourceLoader.exists` ile sessizce atlanır; katman `front` tezgâh üstü / `back` duvar-zemin, müşterilerin arkası; konumlar görseller gelince ayarlanacak).
+  Dükkân arka planı ve tezgâh önü `assets/shop/*.png`; seviyeye göre arka plan `LevelData.background` (`shop_back_s<seviye>.png`, dosya yoksa `shop_back.png`); tabela yazıları `SIGN_TEXTS` ile üstüne konur.
   Kariyerde günün her işine `CareerManager._assign_customers()` ile bir karakter atanır
 - `data/parts/<tür>/<id>.tres` — Parça kataloğu (32 parça; tür klasörleri: ram, sata, m2, fan, psu, gpu, cpu, paste).
   Her parça `ComponentData` (CPU/GPU için `CPUData`/`GPUData`) olarak id, marka (kurgu: Kartal, Pusula, Zirve, Volta, Nimbus, Demirci),
@@ -49,7 +50,7 @@ Proje dizin yapısı ve açıklamaları:
   (`_show_offer_card`: gelen anakarta uyan kademe 1-2-3 parçaları + varsa çıkma "Demirci" parçası; marka, model, toplam, parça kârı; düğme ≥ 46 ekran pikseli).
   `CareerManager.choose_part(id)`: alış fiyatı kasadan hemen düşer, parça işin envanterine YENİ olarak `ram`/`m2` yerine konur (`GameManager.job_hook` → `_apply_offer_to_job`),
   seçim ve iş anakartı kayda yazılır (menüye çıkıp dönmek seçimi silmez). Çıkma parça %20 arızalı gelir (`ComponentData.is_faulty` → `PartItem.is_broken`, BIOS'ta yakalanır);
-  sökülünce yenisi alış fiyatına yeniden alınır (`replace_faulty_part`, bir kez). Stok yok; uyumsuz parça listelenmez; raf seviyeleri (P5) gelene kadar `PartOffer.SHELF_LEVEL = 3`.
+  sökülünce yenisi alış fiyatına yeniden alınır (`replace_faulty_part`, bir kez). Stok yok; uyumsuz parça listelenmez. Listelenen en yüksek kademe dükkân seviyesine bağlıdır (P5): `CareerManager.shelf_level()` seviye 1 → kademe 1, seviye 2 → ≤2, seviye 3-4 → hepsi; Test menüsündeki (kariyer dışı) işlerde 3 sabit (`PartOffer.MAX_SHELF_LEVEL`). O kademede karta uyan parça yoksa `PartOffer.options` bir üst kademeye çıkar, kart hiç boş kalmaz.
   Finans: kasadan alış, müşteriden işçilik + parça satışı + bahşiş; hata cezası yalnız işçiliğe. Fiş ve gün sonu özeti işçilik/parça/bahşişi ayrı satır gösterir.
 - Yeni işler (Aşama 3 / P4): toplam 13 senaryo (menüde), `CAREER_POOL` 12 iş (`full_build` yalnız menüde). `ScenarioData.complaints` her işe 3 şikâyet metni verir
   (biri rastgele seçilir, tezgâh ve iş emri aynı metni gösterir); `loose_parts`/`loose_count` takılı gelmeyen (yerinden çıkmış) parçaları envantere verir.
@@ -67,14 +68,23 @@ Proje dizin yapısı ve açıklamaları:
   Ücret senaryonun `price` alanı; her hata -%10 ve -1 yıldız (en az %50 ücret, en az 1 yıldız). Hatalar: macun taşması,
   sağlam parça sökme, ilk teşhisten sonraki her başarısız BIOS, parçaya zarar verecek sıra hataları (`Motherboard._reject(..., true)`). Yardım mesajları ceza kesmez.
   Hatalar ve aktif iş kayda yazılır: menüye çıkıp dönmek hataları silmez. Kayıt önce geçici dosyaya yazılır, `version` alanı taşır (şu an 5: `offer`, `day_part_sales`,
-  `day_part_cost`; 3 ve 4 numaralı kayıtlar `.get` varsayılanlarıyla açılır).
+  `day_part_cost`; 6: `shop_level`; 3, 4 ve 5 numaralı kayıtlar `.get` varsayılanlarıyla açılır, dükkân seviyesi 1).
   Menüdeki "Test" listesinden açılan işler kariyeri etkilemez (`is_career = false`).
   Bahşiş yıldıza göre ayrı ödenir (`TIP_RATES`: 5★ %15, 4★ %8, 3★ %3).
+- `src/resources/LevelData.gd` + `data/levels/seviye_1..4.tres` — Dükkânın büyüme aşamaları (Aşama 3 / P5): ad, bedel, gereken iş ve yıldız, günlük müşteri sayısı, arka plan yolu, açtıkları (metin listesi).
+  1 Köşe tamircisi (başlangıç) · 2 Mahalle dükkânı (12 iş, ★3,0, 4.000 ₺, günde 5) · 3 Montaj atölyesi (35 iş, ★3,5, 14.000 ₺, günde 6) · 4 Teknoloji mağazası (80 iş, ★4,0, 32.000 ₺, günde 7).
+  `CareerManager.shop_level` kayıtta durur; `level_block_reason()` kapalı-neden metni (`purchase_block_reason` gibi), `buy_level()` şart + para kontrolüyle seviye atlar, alım anında kaydeder.
+  Seviye 1'de günlük müşteri bugünkü kural (1. gün 2, sonra 3, 5. günden 4) ve `PLANNED_DAYS` planlı ilk günler; 2+'da `LevelData.daily_customers`. Yeni seviye bir sonraki günden geçerli.
+  İş havuzu: seviye 1 `LEVEL1_POOL` (7 iş: fan, kablo, RAM, macun, SSD, RAM yükseltme, gevşek parça), seviye 2+ tüm `CAREER_POOL` (12). Seviye 2+'da iş emri başlığı yalnız belirtiyi söyler
+  (`ScenarioData.symptom_title`, `GameManager.order_title`; 12 işte dolu, boşsa eski başlık). `CustomerData.min_shop_level` (varsayılan 1): `_assign_customers` yalnız `min_shop_level <= shop_level` olanlardan atar.
+  Mağaza (`ResultScreen`): ilk sekme "Dükkân" büyüt kartı (şartlar, eksik olan kırmızı, açılanlar, alım düğmesi, kutlama). Raf alımlarına `UpgradeData.required_level` (NVMe, güç kaynağı 2; ekran kartı 3).
 - `src/resources/UpgradeData.gd` + `data/upgrades/*.tres` — Gün sonu mağazasındaki alımlar (Good Pizza, Great Pizza mantığı).
   Türler: `raf` (iş türü açar), `alet` (kolaylık), `dekor` (bahşiş, müşteri). Etki kodda id ile sorgulanır:
   `CareerManager.effect_active(id)` (yalnız kariyerde). Senaryonun `required_upgrade` alanı alınmamışsa müşteri tezgâhta
   geri gönderilir (`turn_away_current`), ücreti gün sonunda "kaçan kazanç" olur. Rafsız işten günde en fazla bir müşteri gelir.
-  Kira yok. Alım anında kaydedilir. Yeni alım: `.tres` oluştur, etkisini id ile bağla.
+  Kira yok. Alım anında kaydedilir. Yeni alım: `.tres` oluştur, etkisini id ile bağla. `required_level` dükkân seviyesi şartıdır (kapalı-neden: "Seviye N: ad gerekli").
+  Dekor etkileri (P5): `isikli_tabela` (2.500 ₺, seviye 2) ve `ikinci_sandalye` (9.000 ₺, seviye 3) günde %50 ihtimalle +1 müşteri (`CareerManager.EXTRA_CUSTOMER_DECOR`, `_begin_day`);
+  `vitrin_isigi` (1.200 ₺, seviye 2) memnun müşterinin bahşiş oranına +%5 (`TIP_DECOR_BONUS`, `tip_for`); `saksi` (300 ₺) ve `ikinci_tabure` (800 ₺) yalnız görünüm.
 - `src/scenes/ui/ResultScreen.tscn` — Gün sonu özeti (kazanç, bahşiş, geri gönderilen müşteri) ve dükkân mağazası
 - `src/scenes/inventory/` — Envanter çekmecesi
 - `src/scenes/minigames/` — Mini oyunlar (termal macun, vida sıkma, BIOS boot)
@@ -138,6 +148,7 @@ Montaj döngüsü:
 |-------|-------------|------------|
 | 2026-09-27 | Muhammed | Proje Godot 4'e taşındı. Temel yapı oluşturuldu. |
 | 2026-10-14 | Ahmet Selim | `index.html` prototipinin tasarımı ve oynanışı Godot'a birebir taşındı (mandal, macun, vida, kablolar, CMOS, uyarılar). |
+| 2026-11-15 | Claude | Aşama 3 / P5: dükkân seviyeleri (`LevelData`, `data/levels`, `CareerManager.shop_level`/`buy_level`), mağazada "Dükkân" sekmesi, seviyeye göre müşteri sayısı, iş havuzu, parça kademesi ve belirsiz iş emri başlığı; 5 dekor alımı ve tezgâh dekor/arka plan altyapısı (görseller henüz yok, dosya yoksa atlanır); `CustomerData.min_shop_level`; kayıt sürümü 6. |
 | 2026-11-14 | Claude | Aşama 3 / P2: tezgâhta parça teklifi (`PartOffer`, teklif kartı), müşteri bütçe tipleri, tepkiler, çıkma parça arızası, parça/işçilik ayrı fiş, 3 yeni katalog parçası (DDR3 Kartal/Pusula, M.2 Demirci), kayıt sürümü 5. |
 | 2026-11-14 | Claude | Aşama 3 / P1: parça kataloğu (`data/parts`, 29 parça), `create_part(id)`, etikette marka ve kapasite, kayıt sürümü 4. |
 | 2026-11-11 | Claude | Görsel yenileme: 10 müşteri yumuşak 2D stilde belden yukarı, 4 ifade; yeni dükkân arka planı ve tezgâh önü; tezgâhtan yükselme/inme, konuşurken ağız, balon yüzün yanında; çay ocağı tezgâhta görünür. |
