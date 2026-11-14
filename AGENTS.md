@@ -29,7 +29,7 @@ Proje dizin yapısı ve açıklamaları:
   Yumuşak 2D stilde Codex ile üretildi; istemler ve üretim betikleri depo dışında `gorsel-uretim/tam/`. Eski SVG'ler kullanılmıyor.
   Tezgâhta müşteri büyük (`COUNTER_SCALE`), tezgâhın arkasından yükselir/iner (`CustomerWalker.rise_in/sink_out`), konuşurken ağız oynar,
   4–5 yıldızda mutlu, 1–2 yıldızda ve rafsız işte kırgın yüz (`set_mood`). Balon yüzün yanında, geniş tarafta (`Counter._layout_bubble`).
-  Satın alınan dekor tezgâhta görünür (`Counter.COUNTER_DECOR`: çay ocağı, saksı, ikinci tabure, ikinci sandalye, ışıklı tabela, vitrin ışığı; yeni dekor PNG'si `assets/shop/dekor/<id>.png`, dosya yoksa `ResourceLoader.exists` ile sessizce atlanır; katman `front` tezgâh üstü / `back` duvar-zemin, müşterilerin arkası; konumlar görseller gelince ayarlanacak).
+  Satın alınan dekor tezgâhta görünür (`Counter.COUNTER_DECOR`: çay ocağı, saksı, ikinci tabure, dolu raf, ışıklı tabela, vitrin ışığı; yeni dekor PNG'si `assets/shop/dekor/<id>.png`, dosya yoksa `ResourceLoader.exists` ile sessizce atlanır; katman `front` tezgâh üstü / `back` duvar-zemin, müşterilerin arkası; konumlar görseller gelince ayarlanacak).
   Dükkân arka planı ve tezgâh önü `assets/shop/*.png`; seviyeye göre arka plan `LevelData.background` (`shop_back_s<seviye>.png`, dosya yoksa `shop_back.png`); tabela yazıları `SIGN_TEXTS` ile üstüne konur.
   Kariyerde günün her işine `CareerManager._assign_customers()` ile bir karakter atanır
 - `data/parts/<tür>/<id>.tres` — Parça kataloğu (32 parça; tür klasörleri: ram, sata, m2, fan, psu, gpu, cpu, paste).
@@ -83,7 +83,7 @@ Proje dizin yapısı ve açıklamaları:
   `CareerManager.effect_active(id)` (yalnız kariyerde). Senaryonun `required_upgrade` alanı alınmamışsa müşteri tezgâhta
   geri gönderilir (`turn_away_current`), ücreti gün sonunda "kaçan kazanç" olur. Rafsız işten günde en fazla bir müşteri gelir.
   Kira yok. Alım anında kaydedilir. Yeni alım: `.tres` oluştur, etkisini id ile bağla. `required_level` dükkân seviyesi şartıdır (kapalı-neden: "Seviye N: ad gerekli").
-  Dekor etkileri (P5): `isikli_tabela` (2.500 ₺, seviye 2) ve `ikinci_sandalye` (9.000 ₺, seviye 3) günde %50 ihtimalle +1 müşteri (`CareerManager.EXTRA_CUSTOMER_DECOR`, `_begin_day`);
+  Dekor etkileri (P5): `isikli_tabela` (2.500 ₺, seviye 2) ve `dolu_raf` (9.000 ₺, seviye 3) günde %50 ihtimalle +1 müşteri (`CareerManager.EXTRA_CUSTOMER_DECOR`, `_begin_day`);
   `vitrin_isigi` (1.200 ₺, seviye 2) memnun müşterinin bahşiş oranına +%5 (`TIP_DECOR_BONUS`, `tip_for`); `saksi` (300 ₺) ve `ikinci_tabure` (800 ₺) yalnız görünüm.
 - `src/scenes/ui/ResultScreen.tscn` — Gün sonu özeti (kazanç, bahşiş, geri gönderilen müşteri) ve dükkân mağazası
 - `src/scenes/inventory/` — Envanter çekmecesi

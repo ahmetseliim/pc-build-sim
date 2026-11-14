@@ -75,8 +75,8 @@ const COUNTER_DECOR: Dictionary = {
 	"cay_ocagi": ["res://assets/shop/cay_ocagi.png", Vector2(800, 852), 200.0, "front"],
 	"saksi": ["res://assets/shop/dekor/saksi.png", Vector2(1150, 852), 130.0, "front"],
 	"ikinci_tabure": ["res://assets/shop/dekor/ikinci_tabure.png", Vector2(330, 790), 150.0, "back"],
-	"ikinci_sandalye": ["res://assets/shop/dekor/ikinci_sandalye.png", Vector2(1500, 790), 190.0, "back"],
-	"isikli_tabela": ["res://assets/shop/dekor/isikli_tabela.png", Vector2(1095, 540), 240.0, "back"],
+	"dolu_raf": ["res://assets/shop/dekor/dolu_raf.png", Vector2(150, 800), 260.0, "back"],
+	"isikli_tabela": ["res://assets/shop/dekor/isikli_tabela.png", Vector2(300, 150), 230.0, "back"],
 	"vitrin_isigi": ["res://assets/shop/dekor/vitrin_isigi.png", Vector2(1600, 60), 380.0, "back"],
 }
 
@@ -163,7 +163,11 @@ func _fit_world() -> void:
 	backdrop.color = WALL
 
 func _build_signs() -> void:
+	# Seviye 3-4 arka planlarında yan pano ve dolap farklı: yalnız kapı ve ana tabela yazıları kalır
+	var big_shop: bool = CareerManager.is_career and CareerManager.shop_level >= 3
 	for entry: Array in SIGN_TEXTS:
+		if big_shop and entry[0] not in ["AÇIK", "PC TAMİRCİSİ"]:
+			continue
 		_world_label(entry[0], entry[1], entry[2], entry[3])
 	_till_label = _world_label("", TILL_POS, 26, INK)
 

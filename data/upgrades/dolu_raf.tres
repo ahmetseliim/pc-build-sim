@@ -4,10 +4,10 @@
 
 [resource]
 script = ExtResource("1_upgrade")
-id = "ikinci_sandalye"
-title = "İkinci Sandalye"
+id = "dolu_raf"
+title = "Dolu Raf"
 category = "dekor"
 price = 9000
-effect = "Bekleme köşesi: günde +1 müşteri gelme ihtimali (%50)."
+effect = "Dolu raf görünümü: günde +1 müşteri gelme ihtimali (%50)."
 required_level = 3
 order = 50

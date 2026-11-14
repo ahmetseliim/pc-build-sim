@@ -11,4 +11,4 @@ required_jobs = 35
 required_stars = 3.5
 daily_customers = 6
 background = "res://assets/shop/shop_back_s3.png"
-unlocks = Array[String](["Günde 6 müşteri", "Üst kademe parçalar", "Ekran kartı rafı açılır", "İkinci sandalye alınabilir", "Daha geniş dükkân görünümü"])
+unlocks = Array[String](["Günde 6 müşteri", "Üst kademe parçalar", "Ekran kartı rafı açılır", "Dolu raf alınabilir", "Daha geniş dükkân görünümü"])

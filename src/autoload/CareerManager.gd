@@ -22,8 +22,8 @@ const VAGUE_TITLE_LEVEL: int = 2 ## Bu seviyeden itibaren iş emri başlığı y
 ## Seviyeye göre parça kademesi sınırı (dizin: seviye - 1): seviye 1 yalnız ekonomik, 2 dengeliye kadar, 3-4 hepsi
 const SHELF_BY_LEVEL: Array[int] = [1, 2, 3, 3]
 const EXTRA_CUSTOMER_CHANCE: float = 0.5 ## Her "müşteri getiren" dekorun günde +1 müşteri getirme ihtimali
-## Günde +1 müşteri ihtimali veren dekorlar (Işıklı tabela, İkinci sandalye)
-const EXTRA_CUSTOMER_DECOR: Array[String] = ["isikli_tabela", "ikinci_sandalye"]
+## Günde +1 müşteri ihtimali veren dekorlar (Işıklı tabela, Dolu raf)
+const EXTRA_CUSTOMER_DECOR: Array[String] = ["isikli_tabela", "dolu_raf"]
 ## Memnun müşterinin bahşiş oranına eklenen dekor etkileri (Çay ocağı TEA_TIP_BONUS ayrıdır)
 const TIP_DECOR_BONUS: Dictionary = {"vitrin_isigi": 0.05}
 
