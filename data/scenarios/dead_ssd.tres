@@ -22,3 +22,5 @@ old_paste = false
 faulty_part = "m2"
 removable_parts = Array[String](["m2"])
 early_boot = true
+offer_part_type = "m2"
+base_budget = 1150

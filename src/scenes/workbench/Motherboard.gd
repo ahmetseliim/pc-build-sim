@@ -92,18 +92,20 @@ func _preinstall_scenario_parts() -> void:
 
 	# Önce parçalar
 	for type: String in types:
-		if type == "paste":
-			continue
 		var data: ComponentData = InventoryManager.create_part(type)
+		if data.part_type == "paste":
+			continue # Macun yuvaya takılmaz; işlemciye sürülür (aşağıda)
 		if data.is_cable:
 			cables.append(data)
 			continue
-		var slot: MotherboardSlot = _free_slot_for(type)
+		# Yuva türü parçanın part_type alanından bilinir: listedeki ad bir katalog id'si de olabilir ("ram_ddr4_8_kartal")
+		var kind: String = data.part_type
+		var slot: MotherboardSlot = _free_slot_for(kind)
 		if slot == null:
 			continue
 		var part: PartItem = _new_part(data)
-		part.is_removable = type in scenario.removable_parts
-		if type == "cpu":
+		part.is_removable = kind in scenario.removable_parts
+		if kind == "cpu":
 			slot.install(part, false)
 			GameManager.set_cpu_state("locked_full")
 			if "paste" in types:
@@ -277,6 +279,9 @@ func _on_part_extract_requested(part_node: Control) -> void:
 	slot.uninstall()
 	if part.is_broken:
 		GameManager.broken_parts.erase(part.data.part_type)
+		# Tezgâhtan alınan çıkma parça arızalı çıktı: yenisi kasadan yeniden alınır (alış fiyatı bir kez daha düşer)
+		if part.data.is_faulty:
+			CareerManager.replace_faulty_part(part.data)
 	elif not part.data.is_new:
 		# Sağlam (asıl) parçayı sökmek yanlış teşhistir
 		EventBus.mistake_made.emit("healthy_removed")

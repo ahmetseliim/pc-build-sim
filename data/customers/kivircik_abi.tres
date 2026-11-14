@@ -18,3 +18,4 @@ role = "Oyuncu"
 accent = Color(0.5569, 0.4196, 0.6902, 1)
 greeting = "Kanka selam, bilgisayar yine naz yapıyor."
 thanks_line = "Efsane kanka! Bu akşam rank kasarım artık."
+budget_type = "genis"

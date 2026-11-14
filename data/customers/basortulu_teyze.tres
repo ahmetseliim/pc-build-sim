@@ -18,3 +18,4 @@ role = "Mahallenin Teyzesi"
 accent = Color(0.3098, 0.6039, 0.4196, 1)
 greeting = "Oğlum, torunumun bilgisayarı bu, bir bakıver."
 thanks_line = "Allah razı olsun yavrum, torunum çok sevinecek."
+budget_type = "dar"

@@ -3,7 +3,8 @@ extends Control
 
 # Tezgâh Sahnesi (Counter)
 # Dükkânın ön yüzü: müşteriler kapıdan girip sıraya dizilir, öndeki tezgâha
-# yürür ve arızayı anlatır; "Atölyeye Al" ile tamir masasına geçilir.
+# yürür, arızayı ve bütçesini anlatır. Parça gereken işlerde (RAM, SSD) teklif kartından
+# parça seçilir, müşteri tepki verir; sonra "Atölyeye Al" ile tamir masasına geçilir.
 # İş bitince buraya dönülür: müşteri yorumunu, yıldızını ve ödemesini söyleyip
 # kapıdan çıkar, arkadaki müşteriler birer adım ilerler.
 #
@@ -93,6 +94,7 @@ var _money_label: Label = null
 var _day_label: Label = null
 var _queue_label: Label = null
 var _till_label: Label = null
+var _offer_panel: PanelContainer = null ## Parça teklif kartı (3 kademe + varsa çıkma)
 
 var _typing: bool = false
 var _type_progress: float = 0.0
@@ -110,7 +112,8 @@ func _ready() -> void:
 	_build_ui()
 	_shown_money = CareerManager.money
 	if CareerManager.counter_mode == "farewell":
-		_shown_money -= int(CareerManager.last_result.get("pay", 0)) + int(CareerManager.last_result.get("tip", 0))
+		var result: Dictionary = CareerManager.last_result
+		_shown_money -= int(result.get("paid", int(result.get("pay", 0)) + int(result.get("tip", 0))))
 		_setup_farewell()
 	else:
 		_setup_arrival()
@@ -236,11 +239,179 @@ func _on_customer_at_counter() -> void:
 	var missing: UpgradeData = CareerManager.current_job_missing()
 	if missing:
 		_say(customer, text, _offer_turn_away.bind(missing))
+		return
+	# Parça gereken işte müşteri bütçesini de söyler (tonu bütçe tipine göre); teklif kartı açılır
+	var offering: bool = CareerManager.needs_offer()
+	if offering or not CareerManager.offer.is_empty():
+		text += " " + PartOffer.budget_line(customer.budget_type, CareerManager.offer_budget())
+	if offering:
+		_say(customer, text, _show_offer_card)
 	else:
 		_say(customer, text, _offer_workshop)
 
 func _offer_workshop() -> void:
 	_show_action("Bilgisayarı Atölyeye Al  ▶", CareerManager.enter_workshop)
+
+# --- Parça teklif kartı ----------------------------------------------------------
+
+# Konuşma bitince "Atölyeye Al" yerine kart açılır: gelen anakarta uyan kademe 1-2-3 parçaları + varsa çıkma parça
+func _show_offer_card() -> void:
+	_hide_offer_card()
+	# Müşterinin yüzü açık kalsın: karttayken şikâyet balonu kapanır (bütçe kartın başlığında yazar)
+	_hide_bubble()
+	var options: Array[Dictionary] = CareerManager.offer_options()
+	var budget: int = CareerManager.offer_budget()
+	var budget_type: String = CareerManager.offer_budget_type()
+	var zoom: float = UIStyle.ui_scale(get_viewport())
+	_offer_panel = PanelContainer.new()
+	var style: StyleBoxFlat = UIStyle.box(BUTTON_BG, 18, 4, INK, INK, 1, Vector2(6, 6))
+	style.set_content_margin_all(12)
+	style.content_margin_top = 8
+	_offer_panel.add_theme_stylebox_override("panel", style)
+	_offer_panel.anchor_left = 0.0
+	_offer_panel.anchor_right = 1.0
+	_offer_panel.anchor_top = 1.0
+	_offer_panel.anchor_bottom = 1.0
+	_offer_panel.offset_left = 16.0 + UIStyle.safe_side()
+	_offer_panel.offset_right = -16.0 - UIStyle.safe_side()
+	_offer_panel.offset_bottom = -22.0
+	_offer_panel.offset_top = -22.0
+	_offer_panel.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	var box: VBoxContainer = VBoxContainer.new()
+	box.add_theme_constant_override("separation", 6)
+	_offer_panel.add_child(box)
+
+	var head: HBoxContainer = HBoxContainer.new()
+	head.add_theme_constant_override("separation", 12)
+	var title: Label = _make_label("Hangi parçayı önerelim?", 22, INK, true)
+	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	head.add_child(title)
+	var pill: PanelContainer = _dark_pill(999)
+	var customer_name: String = _at_counter.data.display_name if _at_counter else "Müşteri"
+	pill.add_child(_make_label("%s · bütçe %s ₺" % [customer_name, _format_money(budget)], 18, BUTTON_BG, true))
+	head.add_child(pill)
+	box.add_child(head)
+
+	var row: HBoxContainer = HBoxContainer.new()
+	row.add_theme_constant_override("separation", 12)
+	box.add_child(row)
+	for option: Dictionary in options:
+		row.add_child(_offer_card(option, budget, budget_type, zoom))
+
+	# Kasada hiçbir seçeneğe yetecek para yoksa oyuncu takılıp kalmasın
+	var affordable: bool = false
+	for option: Dictionary in options:
+		affordable = affordable or CareerManager.offer_block_reason(option) == ""
+	if not affordable:
+		var give_up: Button = _shop_button("Kasada yeterli para yok · Müşteriyi geri gönder", 18, maxf(48.0, 48.0 / (zoom * maxf(get_viewport().get_screen_transform().get_scale().x, 0.1))))
+		give_up.pressed.connect(_give_up_offer)
+		box.add_child(give_up)
+	ui.add_child(_offer_panel)
+	_offer_panel.modulate.a = 0.0
+	create_tween().tween_property(_offer_panel, "modulate:a", 1.0, 0.18)
+
+# Tek seçenek: kademe etiketi + özellik, marka-model, toplam fiyat + parça kârı, uyarı/işçilik-parça satırı ve "Öner" düğmesi.
+# Yatay telefonda kart alçak kalsın diye satırlar yan yana dizilir.
+func _offer_card(option: Dictionary, budget: int, budget_type: String, zoom: float) -> PanelContainer:
+	var card: PanelContainer = PanelContainer.new()
+	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	card.custom_minimum_size.x = 200.0 * zoom
+	var card_style: StyleBoxFlat = UIStyle.box(CREAM, 14, 3, WOOD_SHADOW)
+	card_style.set_content_margin_all(10)
+	card_style.content_margin_left = 12
+	card_style.content_margin_right = 12
+	card.add_theme_stylebox_override("panel", card_style)
+	var col: VBoxContainer = VBoxContainer.new()
+	col.add_theme_constant_override("separation", 2)
+	card.add_child(col)
+
+	# 1. satır: kademe etiketi, sağda özellik
+	var top: HBoxContainer = HBoxContainer.new()
+	top.add_theme_constant_override("separation", 8)
+	var tag_box: PanelContainer = PanelContainer.new()
+	var tag_style: StyleBoxFlat = UIStyle.box(_tier_color(option), 999)
+	tag_style.content_margin_left = 12
+	tag_style.content_margin_right = 12
+	tag_style.content_margin_top = 1
+	tag_style.content_margin_bottom = 1
+	tag_box.add_theme_stylebox_override("panel", tag_style)
+	tag_box.add_child(_make_label(option["tag"], 14, CREAM, true))
+	top.add_child(tag_box)
+	var spec: Label = _make_label(option["spec"], 16, Color("#5B4A3A"), true)
+	spec.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	spec.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	top.add_child(spec)
+	col.add_child(top)
+
+	var name_label: Label = _make_label("%s %s" % [option["brand"], option["model"]], 21, INK, true)
+	name_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	col.add_child(name_label)
+
+	# 3. satır: toplam fiyat, sağda parça kârı
+	var total: int = int(option["total"])
+	var over: bool = total > budget
+	var money_row: HBoxContainer = HBoxContainer.new()
+	var total_label: Label = _make_label("%s ₺" % _format_money(total), 26, RED if over else INK, true)
+	total_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	money_row.add_child(total_label)
+	money_row.add_child(_make_label("kâr +%s ₺" % _format_money(int(option["profit"])), 18, GREEN, true))
+	col.add_child(money_row)
+
+	# 4. satır: bütçe uyarısı ya da işçilik + parça dökümü
+	if over:
+		var limit: int = PartOffer.spend_limit(budget_type, budget)
+		col.add_child(_make_label("Bütçeyi aşıyor!" if total > limit else "Bütçeyi biraz aşıyor", 14, RED, true))
+	else:
+		col.add_child(_make_label("işçilik %s + parça %s" % [_format_money(int(option["labor"])), _format_money(int(option["sell"]))], 14, Color("#5B4A3A"), true))
+
+	var reason: String = CareerManager.offer_block_reason(option)
+	# Dokunma alanı ekranda en az ~46 px olsun (ekran küçülünce tasarım birimi büyütülür)
+	var screen_scale: float = maxf(get_viewport().get_screen_transform().get_scale().x, 0.1)
+	var pick: Button = _shop_button(reason if reason != "" else "Bunu Öner", 19, maxf(46.0, 46.0 / (zoom * screen_scale)))
+	pick.disabled = reason != ""
+	pick.pressed.connect(_on_part_chosen.bind(option["id"]))
+	col.add_child(pick)
+	return card
+
+func _tier_color(option: Dictionary) -> Color:
+	if option["used"]:
+		return WOOD_SHADOW
+	match int(option["tier"]):
+		1:
+			return GREEN
+		2:
+			return Color("#C9892A")
+		_:
+			return Color("#7A5BA8")
+
+func _hide_offer_card() -> void:
+	if _offer_panel:
+		_offer_panel.queue_free()
+		_offer_panel = null
+
+# Oyuncu bir parça seçti: müşteri tepki verir. Bütçeyi çok aşarsa kırgın yüzle gider (kaçan kazanç),
+# aksi hâlde alış fiyatı kasadan düşer ve "Atölyeye Al" açılır.
+func _on_part_chosen(part_id: String) -> void:
+	var verdict: Dictionary = CareerManager.choose_part(part_id)
+	if not verdict.get("ok", false) and not verdict.get("leaves", false):
+		AudioManager.play_sfx("warn")
+		return
+	_hide_offer_card()
+	_shown_money = CareerManager.money
+	_update_money()
+	_at_counter.set_mood(verdict["mood"])
+	if verdict["leaves"]:
+		AudioManager.play_sfx("warn")
+		CareerManager.turn_away_current(int(verdict["total"]))
+		_say(_at_counter.data, verdict["line"], _leave_after.bind(1.2))
+	else:
+		AudioManager.play_sfx("coin")
+		_say(_at_counter.data, verdict["line"], _offer_workshop)
+
+# Kasada hiçbir parçaya para yok: müşteri geri gönderilir
+func _give_up_offer() -> void:
+	_hide_offer_card()
+	_turn_away()
 
 # Bu işin parçası rafta yok: iş kabul edilemez (gün sonu mağazasından alınır)
 func _offer_turn_away(missing: UpgradeData) -> void:
@@ -285,11 +456,12 @@ func _build_review_extras(r: Dictionary) -> void:
 	var star_text: String = ""
 	for i: int in range(CareerManager.MAX_STARS):
 		star_text += "★" if i < stars else "☆"
-	var star_label: Label = _make_label(star_text, 40, GOLD, true)
+	var star_label: Label = _make_label(star_text, 34, GOLD, true)
 	_extras.add_child(star_label)
 	var price: int = int(r.get("price", 0))
 	var pay: int = int(r.get("pay", 0))
-	_extras.add_child(_receipt_row("İş ücreti", "%d ₺" % price, INK))
+	var part_sell: int = int(r.get("part_sell", 0))
+	_extras.add_child(_receipt_row("İşçilik ücreti", "%d ₺" % price, INK))
 	var mistakes: Dictionary = r.get("mistakes", {})
 	for kind: String in mistakes:
 		var count: int = mistakes[kind]
@@ -297,10 +469,13 @@ func _build_review_extras(r: Dictionary) -> void:
 			"-%d%%" % int(count * CareerManager.MISTAKE_PENALTY * 100), RED))
 	if mistakes.is_empty():
 		_extras.add_child(_receipt_row("Hatasız iş!", "", GREEN))
+	# Parça ayrı satır: hata cezası parça bedelini kesmez
+	if part_sell > 0:
+		_extras.add_child(_receipt_row("Parça · %s" % r.get("part_label", ""), "+%d ₺" % part_sell, INK))
 	var tip: int = int(r.get("tip", 0))
 	if tip > 0:
 		_extras.add_child(_receipt_row("Bahşiş", "+%d ₺" % tip, Color("#A16207")))
-	_extras.add_child(_receipt_row("Ödenen", "+%d ₺" % (pay + tip), GREEN, 26))
+	_extras.add_child(_receipt_row("Ödenen", "+%d ₺" % int(r.get("paid", pay + tip)), GREEN, 26))
 	_extras.visible = false
 
 func _show_payment(r: Dictionary) -> void:
@@ -418,6 +593,9 @@ func _layout_bubble() -> void:
 		# Yatay telefonda sıra etiketi sol üstte: isim etiketi onun üstüne binmesin
 		top_limit = maxf(top_limit, _queue_label.get_parent().get_global_rect().end.y + 30.0 * ui_zoom)
 	var bottom_limit: float = size.y - (_action_button.size.y + 60.0 if _action_button.visible else 40.0)
+	if _offer_panel and is_instance_valid(_offer_panel):
+		# Teklif kartı açıkken balon kartın üstünde kalır
+		bottom_limit = minf(bottom_limit, _offer_panel.get_global_rect().position.y - 14.0)
 	var x: float
 	var y: float
 	if beside:
@@ -427,9 +605,26 @@ func _layout_bubble() -> void:
 		x = clampf(face.x - width * 0.45, margin, size.x - width - margin)
 		y = top_limit
 	_bubble.position = Vector2(x, y)
+	_keep_button_clear(margin)
 	_bubble.pivot_offset = Vector2(0.0 if on_right else width, height * 0.35) if beside else Vector2(width / 2.0, height)
 	_name_tag.position = _bubble.position + Vector2(22, -24.0 * ui_zoom)
 	ui.queue_redraw()
+
+# Alttaki eylem düğmesi (Güle güle, Atölyeye Al) uzun balonla (fişli yorum) çakışacaksa balonun karşı yanına kayar
+func _keep_button_clear(margin: float) -> void:
+	if not _action_button.visible:
+		return
+	var w: float = _action_button.size.x
+	var x: float = (size.x - w) / 2.0
+	var bubble_rect: Rect2 = Rect2(_bubble.position, _bubble.size).grow(10.0)
+	var button_rect: Rect2 = Rect2(Vector2(x, _action_button.position.y), _action_button.size)
+	if bubble_rect.intersects(button_rect):
+		if bubble_rect.get_center().x < size.x / 2.0:
+			x = bubble_rect.end.x + 14.0
+		else:
+			x = bubble_rect.position.x - 14.0 - w
+		x = clampf(x, margin, size.x - w - margin)
+	_action_button.position.x = x
 
 func _face_screen_pos() -> Vector2:
 	if _at_counter:
@@ -632,7 +827,7 @@ func _make_label(text: String, font_size: int, color: Color, display: bool) -> L
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	return label
 
-func _receipt_row(left: String, right: String, color: Color, font_size: int = 19) -> HBoxContainer:
+func _receipt_row(left: String, right: String, color: Color, font_size: int = 18) -> HBoxContainer:
 	var row: HBoxContainer = HBoxContainer.new()
 	var l: Label = _make_label(left, font_size, color, font_size > 20)
 	l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -667,7 +862,12 @@ func _shop_button(text: String, font_size: int, height: float) -> Button:
 	pressed.shadow_offset = Vector2(2, 2)
 	button.add_theme_stylebox_override("normal", normal)
 	button.add_theme_stylebox_override("hover", hover)
+	var disabled: StyleBoxFlat = normal.duplicate()
+	disabled.bg_color = Color("#CFC4B3")
+	disabled.shadow_offset = Vector2(2, 2)
 	button.add_theme_stylebox_override("pressed", pressed)
+	button.add_theme_stylebox_override("disabled", disabled)
+	button.add_theme_color_override("font_disabled_color", Color("#7A6A58"))
 	button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 	button.add_theme_font_override("font", UIStyle.shop_font(true, 800))
 	button.add_theme_font_size_override("font_size", font_size)

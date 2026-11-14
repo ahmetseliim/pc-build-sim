@@ -31,14 +31,26 @@ Proje dizin yapısı ve açıklamaları:
   4–5 yıldızda mutlu, 1–2 yıldızda ve rafsız işte kırgın yüz (`set_mood`). Balon yüzün yanında, geniş tarafta (`Counter._layout_bubble`).
   Satın alınan dekor tezgâhta görünür (`Counter.COUNTER_DECOR`, şimdilik çay ocağı). Dükkân arka planı ve tezgâh önü `assets/shop/*.png`; tabela yazıları `SIGN_TEXTS` ile üstüne konur.
   Kariyerde günün her işine `CareerManager._assign_customers()` ile bir karakter atanır
-- `data/parts/<tür>/<id>.tres` — Parça kataloğu (29 parça; tür klasörleri: ram, sata, m2, fan, psu, gpu, cpu, paste).
+- `data/parts/<tür>/<id>.tres` — Parça kataloğu (32 parça; tür klasörleri: ram, sata, m2, fan, psu, gpu, cpu, paste).
   Her parça `ComponentData` (CPU/GPU için `CPUData`/`GPUData`) olarak id, marka (kurgu: Kartal, Pusula, Zirve, Volta, Nimbus, Demirci),
   model, kademe (1 ekonomik, 2 dengeli, 3 üst), `buy_price`/`sell_price`, RAM türü, kapasite, watt, `min_shelf_level`, `art` taşır.
   Fiyat kuralı: kademe 2 alış ≈ 1,8×, kademe 3 ≈ 3× kademe 1; satış = alış × 1,4–1,55. `InventoryManager` açılışta klasörü yükler:
   `create_part(id)` katalog parçasının kopyasını verir (boyut `PART_SIZES` ile yuvaya 1:1 zorlanır), `catalog_parts(tür, raf_seviyesi)` listeler.
   Eski tür adı (`"ram"`, `"m2"`, `"gpu"`...) hâlâ geçerli ve DEĞİŞMEDEN genel (markasız) parça verir; senaryolar bunları kullanır.
   Kablolar kataloğa girmez. Etiketi `PartArt.part_label()` kurar ("Kartal 8 GB DDR4"); markasız parça eski çizimini korur.
-  Yeni parça: `.tres` ekle (id dosya adıyla aynı, `part_size` yuva boyutu). Senaryo envanteri/takılı listeleri şimdilik yalnız tür adı kabul eder.
+  Yeni parça: `.tres` ekle (id dosya adıyla aynı, `part_size` yuva boyutu). Senaryo `inventory_parts` listesi tür adı ya da katalog id'si kabul eder;
+  yuva türü her zaman parçanın `part_type` alanından bilinir (`Motherboard._preinstall_scenario_parts` listedeki adı değil `data.part_type`'ı kullanır).
+- `src/utils/PartOffer.gd` + `CareerManager.offer` — Tezgâhta parça teklifi ve müşteri bütçesi (Aşama 3 / P2). `ScenarioData.offer_part_type` ("ram", "m2"; boşsa
+  teklif yok, bugünkü akış) ve `base_budget` (işçilik + parça toplamı için ₺ taban) yalnız `faulty_ram` (880) ve `dead_ssd` (1150) senaryolarında dolu.
+  `CustomerData.budget_type` (`dar` ×0,8, `orta` ×1,0, `genis` ×1,6) bütçeyi ve tepkiyi belirler: dar bütçeyi aşarsa gider ve çıkmaya sevinir; orta %15'e kadar
+  aşımı kabul eder (normal yüz, bahşiş yok); geniş en ucuza "daha iyisi yok muydu" der (bahşiş yarı), çıkmaya kızar (kırgın yüz, bahşiş yok); uygun seçim mutlu yüz ve
+  bahşişe +%5. Çok aşım: kırgın yüz, müşteri gider, kaçan kazanç teklifin toplamı (`turn_away_current(lost)`).
+  `Counter` müşterinin şikâyetine bütçe sözünü ekler (`PartOffer.budget_line`, tona göre), konuşma bitince "Atölyeye Al" yerine teklif kartını açar
+  (`_show_offer_card`: gelen anakarta uyan kademe 1-2-3 parçaları + varsa çıkma "Demirci" parçası; marka, model, toplam, parça kârı; düğme ≥ 46 ekran pikseli).
+  `CareerManager.choose_part(id)`: alış fiyatı kasadan hemen düşer, parça işin envanterine YENİ olarak `ram`/`m2` yerine konur (`GameManager.job_hook` → `_apply_offer_to_job`),
+  seçim ve iş anakartı kayda yazılır (menüye çıkıp dönmek seçimi silmez). Çıkma parça %20 arızalı gelir (`ComponentData.is_faulty` → `PartItem.is_broken`, BIOS'ta yakalanır);
+  sökülünce yenisi alış fiyatına yeniden alınır (`replace_faulty_part`, bir kez). Stok yok; uyumsuz parça listelenmez; raf seviyeleri (P5) gelene kadar `PartOffer.SHELF_LEVEL = 3`.
+  Finans: kasadan alış, müşteriden işçilik + parça satışı + bahşiş; hata cezası yalnız işçiliğe. Fiş ve gün sonu özeti işçilik/parça/bahşişi ayrı satır gösterir.
 - `src/scenes/workbench/` — Montaj masası (Motherboard, MotherboardSlot)
 - Anakart modelleri: `src/resources/BoardData.gd` + `data/boards/*.tres` (ad, dönem, soket, RAM türü, renkler) ve
   yerleşim sahneleri (modern: `Motherboard.tscn`, diğerleri: `src/scenes/workbench/boards/*.tscn`). Kod (`Motherboard.gd`)
@@ -49,7 +61,8 @@ Proje dizin yapısı ve açıklamaları:
   İlk 3 gün `PLANNED_DAYS`, sonrası `CAREER_POOL`'dan rastgele (1. gün 2, sonra 3, 5. günden itibaren 4 müşteri).
   Ücret senaryonun `price` alanı; her hata -%10 ve -1 yıldız (en az %50 ücret, en az 1 yıldız). Hatalar: macun taşması,
   sağlam parça sökme, ilk teşhisten sonraki her başarısız BIOS, parçaya zarar verecek sıra hataları (`Motherboard._reject(..., true)`). Yardım mesajları ceza kesmez.
-  Hatalar ve aktif iş kayda yazılır: menüye çıkıp dönmek hataları silmez. Kayıt önce geçici dosyaya yazılır, `version` alanı taşır.
+  Hatalar ve aktif iş kayda yazılır: menüye çıkıp dönmek hataları silmez. Kayıt önce geçici dosyaya yazılır, `version` alanı taşır (şu an 5: `offer`, `day_part_sales`,
+  `day_part_cost`; 3 ve 4 numaralı kayıtlar `.get` varsayılanlarıyla açılır).
   Menüdeki "Test" listesinden açılan işler kariyeri etkilemez (`is_career = false`).
   Bahşiş yıldıza göre ayrı ödenir (`TIP_RATES`: 5★ %15, 4★ %8, 3★ %3).
 - `src/resources/UpgradeData.gd` + `data/upgrades/*.tres` — Gün sonu mağazasındaki alımlar (Good Pizza, Great Pizza mantığı).
@@ -77,7 +90,7 @@ Proje dizin yapısı ve açıklamaları:
 
 ## Oyun Mekanikleri
 Oyun iki aşamalıdır:
-- **Kariyer akışı:** Tezgâh (müşteri yürüyerek gelir, şikâyetini söyler) → "Bilgisayarı Atölyeye Al" → atölye (tamir)
+- **Kariyer akışı:** Tezgâh (müşteri yürüyerek gelir, şikâyetini ve bütçesini söyler; RAM/SSD işinde teklif kartından parça seçilir, müşteri tepki verir) → "Bilgisayarı Atölyeye Al" → atölye (tamir)
   → BIOS başarılı → tezgâha dönülür, müşteri yorumunu, yıldızını ve ödemesini söyleyip kapıdan çıkar, sıradakiler ilerler
   → günün son müşterisi gidince Gün Sonu Özeti (`ResultScreen`). Tezgâh görselleri ve yazı tipleri (Baloo 2, Nunito)
   "Müşteri Karakterleri" tasarım dosyasından alındı (`assets/shop/`, `assets/fonts/`).
@@ -120,6 +133,7 @@ Montaj döngüsü:
 |-------|-------------|------------|
 | 2026-09-27 | Muhammed | Proje Godot 4'e taşındı. Temel yapı oluşturuldu. |
 | 2026-10-14 | Ahmet Selim | `index.html` prototipinin tasarımı ve oynanışı Godot'a birebir taşındı (mandal, macun, vida, kablolar, CMOS, uyarılar). |
+| 2026-11-14 | Claude | Aşama 3 / P2: tezgâhta parça teklifi (`PartOffer`, teklif kartı), müşteri bütçe tipleri, tepkiler, çıkma parça arızası, parça/işçilik ayrı fiş, 3 yeni katalog parçası (DDR3 Kartal/Pusula, M.2 Demirci), kayıt sürümü 5. |
 | 2026-11-14 | Claude | Aşama 3 / P1: parça kataloğu (`data/parts`, 29 parça), `create_part(id)`, etikette marka ve kapasite, kayıt sürümü 4. |
 | 2026-11-11 | Claude | Görsel yenileme: 10 müşteri yumuşak 2D stilde belden yukarı, 4 ifade; yeni dükkân arka planı ve tezgâh önü; tezgâhtan yükselme/inme, konuşurken ağız, balon yüzün yanında; çay ocağı tezgâhta görünür. |
 | 2026-11-10 | Claude | Aşama 2: gün sonu mağazası (Raf, Alet, Dekor), SSD rafı, cırcır tornavida, macun şablonu, çay ocağı, bahşiş, rafsız müşterinin geri gönderilmesi. Kayıt sürümü 3. |

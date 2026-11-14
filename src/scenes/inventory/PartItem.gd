@@ -22,6 +22,7 @@ var _pointer: Vector2 = Vector2.ZERO # İmlecin son konumu (tuval koordinatı)
 
 func setup(part_data: ComponentData) -> void:
 	data = part_data
+	is_broken = data.is_faulty # Tedarikçiden arızalı gelen parça takılınca BIOS'ta yakalanır
 	custom_minimum_size = data.part_size
 	size = data.part_size
 	size_flags_vertical = Control.SIZE_SHRINK_CENTER

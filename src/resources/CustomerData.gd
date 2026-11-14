@@ -14,3 +14,5 @@ extends Resource
 @export var accent: Color = Color("#E1A83A") ## Konuşma balonundaki isim etiketinin rengi
 @export var greeting: String = "" ## Tezgâha gelince şikâyetten önce söylediği söz
 @export var thanks_line: String = "" ## Memnun kalınca söylediği kendine özgü söz
+## Bütçe tipi: "dar" (×0,8), "orta" (×1,0), "genis" (×1,6). Parça teklifinde müşterinin bütçesini ve tepkisini belirler (PartOffer)
+@export_enum("dar", "orta", "genis") var budget_type: String = "orta"

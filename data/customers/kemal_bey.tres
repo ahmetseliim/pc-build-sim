@@ -18,3 +18,4 @@ role = "Gösterişçi Zengin"
 accent = Color(0.2902, 0.498, 0.7098, 1)
 greeting = "Merhaba usta. Acelem var, fiyat önemli değil."
 thanks_line = "Mükemmel. Arkadaşlarıma da seni önereceğim."
+budget_type = "genis"

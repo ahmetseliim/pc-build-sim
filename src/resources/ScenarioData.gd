@@ -14,6 +14,10 @@ extends Resource
 @export_multiline var hint: String = "" ## İş emri kartında gösterilen ipucu
 ## Bu işi kabul etmek için gereken dükkân alımı (data/upgrades/*.tres id'si, örn. "raf_ssd"). Boşsa her zaman yapılabilir.
 @export var required_upgrade: String = ""
+## Tezgâhta parça teklifi açılacak parça türü ("ram", "m2"...). Boşsa teklif yok: müşteri doğrudan atölyeye alınır.
+@export var offer_part_type: String = ""
+## Teklif toplam fiyatı (işçilik + parça) için taban bütçe (₺); müşterinin bütçesi bunun bütçe tipi çarpanıyla çarpımıdır
+@export var base_budget: int = 0
 
 @export_group("Bilgisayarın durumu")
 ## Bu işte gelebilecek anakartlar (data/boards/*.tres); her seferinde biri rastgele seçilir. Boşsa modern kart.

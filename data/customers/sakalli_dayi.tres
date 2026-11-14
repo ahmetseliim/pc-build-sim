@@ -18,3 +18,4 @@ role = "Emekli Öğretmen"
 accent = Color(0.7059, 0.3294, 0.2902, 1)
 greeting = "Hayırlı işler. Bu makineyle bir derdim var."
 thanks_line = "Aferin evlat, işini bilen adamsın."
+budget_type = "orta"

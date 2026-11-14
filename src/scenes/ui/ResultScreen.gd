@@ -54,8 +54,16 @@ func _show_day_summary() -> void:
 	_spacer(6)
 	_row("Tamamlanan iş", str(CareerManager.day_jobs), Color.WHITE)
 	_row("Bugünkü kazanç", "%d ₺" % CareerManager.day_earned, GOLD_TEXT)
+	# İşçilik ve parça ayrı satırlarda: kazanç = işçilik + parça satışı + bahşiş
+	if CareerManager.day_part_sales > 0 or CareerManager.day_part_cost > 0:
+		var labor: int = CareerManager.day_earned - CareerManager.day_part_sales - CareerManager.day_tips
+		_row("   içinde işçilik", "%d ₺" % labor, MUTED, 13)
+		_row("   içinde parça satışı", "%d ₺" % CareerManager.day_part_sales, MUTED, 13)
 	if CareerManager.day_tips > 0:
 		_row("   içinde bahşiş", "%d ₺" % CareerManager.day_tips, MUTED, 13)
+	if CareerManager.day_part_cost > 0:
+		_row("Parça alışı (kasadan çıkan)", "-%d ₺" % CareerManager.day_part_cost, RED_TEXT)
+		_row("Parça kârı", "%d ₺" % (CareerManager.day_part_sales - CareerManager.day_part_cost), GREEN)
 	var day_avg: float = float(CareerManager.day_star_total) / float(maxi(CareerManager.day_jobs, 1))
 	_row("Bugünkü ortalama", "★ %.1f" % day_avg, GOLD_TEXT)
 	if CareerManager.day_missed > 0:

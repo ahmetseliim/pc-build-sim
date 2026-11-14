@@ -69,9 +69,15 @@ func setup(types: Array[String]) -> void:
 	# Tamir dükkânında envanterdekiler yeni yedek parçalardır
 	var scenario: ScenarioData = GameManager.current_scenario
 	var spares: bool = scenario != null and scenario.shop_stage == 1 and scenario.inventory_is_new
+	var faulty_pending: String = GameManager.scenario_faulty_id
 	for type: String in types:
 		var part: ComponentData = create_part(type)
 		part.is_new = spares
+		# Tezgâhta seçilen çıkma parça arızalı geldiyse (bir kez): takılınca BIOS'ta yakalanır
+		if faulty_pending != "" and type == faulty_pending:
+			part.is_faulty = true
+			part.is_new = true
+			faulty_pending = ""
 		available_parts.append(part)
 	EventBus.inventory_updated.emit()
 

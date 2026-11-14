@@ -18,3 +18,4 @@ role = "Grafik Tasarımcı"
 accent = Color(0.851, 0.3961, 0.2314, 1)
 greeting = "Merhaba, teslim tarihim yarın, yardım lazım!"
 thanks_line = "Hayat kurtardın! Projeyi yetiştiririm artık."
+budget_type = "genis"

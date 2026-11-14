@@ -17,3 +17,4 @@ role = "Şüpheci Pazarlıkçı"
 accent = Color(0.3098, 0.6039, 0.4196, 1)
 greeting = "Evladım, bak bakalım şuna, ama kazık atma!"
 thanks_line = "Hıh, bu sefer gerçekten iyi iş çıkarmışsın."
+budget_type = "dar"

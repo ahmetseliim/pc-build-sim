@@ -30,6 +30,9 @@ extends Resource
 @export var form_factor: String = "" ## Güç kaynağı için ATX vb.
 @export var min_shelf_level: int = 1 ## Hangi raf seviyesinde satılabilir (1-3)
 @export var art: String = "" ## Görsel anahtarı (P6'da parça görselini seçer), örn. "ram_t2"
+## Çıkma parça tedarikçiden arızalı geldi (tezgâh teklifinde %20 ihtimal). Takılınca BIOS'ta yakalanır; PartItem.is_broken olur.
+## Yalnız çalışma anında doldurulur, katalog dosyalarında false kalır.
+@export var is_faulty: bool = false
 
 @export_group("Görünüm")
 @export var part_size: Vector2 = Vector2(100, 100) ## Envanterdeki boyut (px)

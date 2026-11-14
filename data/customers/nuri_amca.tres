@@ -18,3 +18,4 @@ role = "Antika Meraklısı"
 accent = Color(0.8824, 0.6588, 0.2275, 1)
 greeting = "Kolay gelsin evladım."
 thanks_line = "Eline sağlık evladım, dedemin dükkânındaki usta gibisin!"
+budget_type = "dar"

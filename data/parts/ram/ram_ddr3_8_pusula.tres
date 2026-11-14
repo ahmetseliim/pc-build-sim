@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="ComponentData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/resources/ComponentData.gd" id="1_part"]
+
+[resource]
+script = ExtResource("1_part")
+id = "ram_ddr3_8_pusula"
+part_type = "ram"
+part_name = "Pusula Denge 1866"
+brand = "Pusula"
+model = "Denge 1866"
+tier = 2
+buy_price = 100
+sell_price = 150
+price = 150.0
+min_shelf_level = 2
+art = "ram_t2"
+part_size = Vector2(42, 130)
+ram_type = "DDR3"
+capacity_gb = 8

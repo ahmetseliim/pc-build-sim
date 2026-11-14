@@ -18,3 +18,4 @@ role = "Vintage Avcısı"
 accent = Color(0.851, 0.3961, 0.2314, 1)
 greeting = "Selam! Bir bakabilir misin?"
 thanks_line = "Süpersin! Yorumlara beş yıldız yazacağım."
+budget_type = "orta"

@@ -18,3 +18,4 @@ role = "Üniversite Öğrencisi"
 accent = Color(0.2902, 0.498, 0.7098, 1)
 greeting = "Abi selam, ödev teslimim var, bilgisayar gitti."
 thanks_line = "Abi sağ ol ya, ödevi kurtardın!"
+budget_type = "dar"

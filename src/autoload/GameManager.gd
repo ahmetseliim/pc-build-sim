@@ -33,6 +33,10 @@ var current_board: BoardData = null ## Bu işte gelen bilgisayarın anakartı
 var board_slot_types: Array[String] = [] ## Yüklü anakartta bulunan yuva türleri
 var scenario_broken: Array[String] = [] ## Bu oturumda bozuk gelen kablolar (rastgele seçim çözülmüş)
 var scenario_inventory: Array[String] = [] ## Bu oturumda envantere konan parçalar
+## Tezgâh teklifinde seçilen çıkma parça tedarikçiden arızalı geldiyse onun katalog kimliği (InventoryManager.setup bu parçayı arızalı işaretler)
+var scenario_faulty_id: String = ""
+## İş hazırlanınca çağrılır (CareerManager: tezgâhta seçilen teklif parçasını ve kartı işe uygular). GameManager kariyeri tanımaz.
+var job_hook: Callable = Callable()
 
 var cpu_state: String = "locked_empty" # Durumlar: locked_empty, open, installed, locked_full, painting, paste_applied, screwing_fan, fan_mounted
 var installed: Dictionary = {} ## parça türü -> takılı adet
@@ -81,7 +85,7 @@ func _notification(what: int) -> void:
 func prepare_job(scenario: ScenarioData) -> void:
 	_prepare(scenario)
 	_job_prepared = true
-	board_slot_types = _slot_types_of(current_board)
+	board_slot_types = slot_types_of(current_board)
 	if not scenario.random_broken_cable:
 		return
 	var candidates: Array[String] = []
@@ -93,7 +97,7 @@ func prepare_job(scenario: ScenarioData) -> void:
 		scenario_broken.append(random_cable_pick)
 
 # Anakart sahnesindeki yuva türleri
-func _slot_types_of(board: BoardData) -> Array[String]:
+func slot_types_of(board: BoardData) -> Array[String]:
 	var types: Array[String] = []
 	var scene: PackedScene = load(board.scene_path)
 	var root: Node = scene.instantiate()
@@ -115,6 +119,9 @@ func _prepare(scenario: ScenarioData) -> void:
 	scenario_inventory = scenario.inventory_parts.duplicate()
 	if scenario.spare_for_broken:
 		scenario_inventory.append_array(scenario_broken)
+	scenario_faulty_id = ""
+	if job_hook.is_valid():
+		job_hook.call()
 
 # Müşterinin şikâyeti
 func get_complaint() -> String:
