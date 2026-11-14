@@ -30,6 +30,7 @@ func setup(part_data: ComponentData) -> void:
 	tooltip_text = data.part_name
 	set_process_input(false)
 	set_process(false)
+	PartArt.attach_overlays(self, data) # Fan: doku süzgeci, kademe 3 ışıma katmanı
 	if data.part_type in SPINNING_TYPES:
 		EventBus.bios_boot_started.connect(_on_boot_started)
 		EventBus.boot_failed.connect(_on_boot_failed)
