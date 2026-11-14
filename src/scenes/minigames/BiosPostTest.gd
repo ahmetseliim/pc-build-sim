@@ -45,6 +45,12 @@ func start_boot() -> void:
 func _build_sequence() -> void:
 	boot_sequence.clear()
 	boot_ok = true
+	# Arızalı güç kaynağı: düğmeye basılır ama hiçbir şey olmaz (BIOS bile açılmaz)
+	if "psu" in GameManager.broken_parts:
+		_fail("Power Button pressed: NO RESPONSE")
+		_fail("PSU: NO POWER OUTPUT — 12V / 5V RAILS DEAD")
+		_halt()
+		return
 	_ok("BIOS DATE: 09/11/2026 15:15:00 VER: 2.10.128")
 	if not GameManager.is_working("atx24"):
 		_fail("Motherboard Power (ATX 24-Pin): NO SIGNAL")
@@ -118,7 +124,9 @@ func _build_sequence() -> void:
 			_fail("Storage: M.2 NVMe — NOT RESPONDING (S.M.A.R.T. FAILURE)")
 		else:
 			_fail("Storage: M.2 NVMe — NOT DETECTED")
-	if GameManager.board_has("sata"):
+	# Eski SATA diski sökülebilen işte (NVMe yükseltme) disk sökülmüşse BIOS SATA aramaz
+	var sata_removed: bool = GameManager.sata_is_optional() and GameManager.installed.get("sata", 0) == 0
+	if GameManager.board_has("sata") and not sata_removed:
 		var role: String = "Secondary" if GameManager.board_has("m2") else "Primary"
 		if sata_ok:
 			_ok("Storage: SATA SSD %s (6 Gb/s) OK" % role)
@@ -128,6 +136,12 @@ func _build_sequence() -> void:
 	# Ekran kartı; yuvası olmayan kartta işlemcinin dahili grafiği
 	if not GameManager.board_has("gpu"):
 		_ok("Onboard Graphics: %s ... OK" % (board.onboard_graphics if board else "iGPU"))
+	elif "gpu" in GameManager.broken_parts:
+		# Arızalı ekran kartı: kablo takılı ama kart cevap vermez, görüntü gelmez, kasa bip kodu verir
+		_fail("PCIe Slot 1: GPU NOT RESPONDING — NO VIDEO SIGNAL")
+		_fail("*** BEEP — BEEP BEEP BEEP (Video Card Error) ***")
+		_halt()
+		return
 	elif GameManager.is_working("gpu") and GameManager.is_working("pcie8"):
 		_ok("PCIe Slot 1: Discrete GPU Initialized")
 		_ok("GPU Power (PCIe 8-Pin): CONNECTED")

@@ -9,6 +9,7 @@ shop_stage = 1
 price = 600
 customer = "Selin Hanım"
 complaint = "Bilgisayar açılıyor, fanlar dönüyor ama Windows gelmiyor. Ekranda 'Reboot and select proper boot device' yazıyor. Son günlerde dosyaları açarken sürekli takılıyordu."
+complaints = Array[String](["Bilgisayar açılıyor, fanlar dönüyor ama Windows gelmiyor. Ekranda 'Reboot and select proper boot device' yazıyor. Son günlerde dosyaları açarken sürekli takılıyordu.", "Windows hiç açılmıyor, ekranda 'Reboot and select proper boot device' yazıp duruyor. Dosyaları açarken zaten çok yavaşlamıştı.", "Bilgisayar açılıyor ama sistem diskini bulamıyor. Geçen hafta bir dosya kopyalarken bir anda donmuştu."])
 menu_description = "Sistem diski ölmüş, Windows açılmıyor. M.2 SSD'nin vidasını sök, yenisiyle değiştir."
 hint = "İpucu: BIOS'ta hangi diskin cevap vermediğine bak. M.2 SSD'yi sabitleyen küçük vidaya basılı tutarak sök; SSD yerinden kalkınca tutup envantere taşı. Sonra \"YENİ\" SSD'yi yuvaya tak ve vidasını sık."
 required_upgrade = "raf_ssd"

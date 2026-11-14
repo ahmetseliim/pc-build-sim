@@ -51,6 +51,11 @@ Proje dizin yapısı ve açıklamaları:
   seçim ve iş anakartı kayda yazılır (menüye çıkıp dönmek seçimi silmez). Çıkma parça %20 arızalı gelir (`ComponentData.is_faulty` → `PartItem.is_broken`, BIOS'ta yakalanır);
   sökülünce yenisi alış fiyatına yeniden alınır (`replace_faulty_part`, bir kez). Stok yok; uyumsuz parça listelenmez; raf seviyeleri (P5) gelene kadar `PartOffer.SHELF_LEVEL = 3`.
   Finans: kasadan alış, müşteriden işçilik + parça satışı + bahşiş; hata cezası yalnız işçiliğe. Fiş ve gün sonu özeti işçilik/parça/bahşişi ayrı satır gösterir.
+- Yeni işler (Aşama 3 / P4): toplam 13 senaryo (menüde), `CAREER_POOL` 12 iş (`full_build` yalnız menüde). `ScenarioData.complaints` her işe 3 şikâyet metni verir
+  (biri rastgele seçilir, tezgâh ve iş emri aynı metni gösterir); `loose_parts`/`loose_count` takılı gelmeyen (yerinden çıkmış) parçaları envantere verir.
+  Yeni raflar: NVMe (2.500 ₺, 10 iş ★3,0), güç kaynağı (3.500 ₺, 16 iş ★3,0), ekran kartı (6.000 ₺, 30 iş ★3,5); SSD rafı 800 ₺.
+  PSU, GPU ve SATA söküme açık (dokununca bağlı kablolar envantere döner, parça kalkar); arızalı PSU'da güç düğmesi tepkisiz, arızalı GPU'da "NO VIDEO SIGNAL" (`BiosPostTest`).
+  `PartOffer` teklif türleri: ram, m2, sata, psu, gpu (karta uyum: ilgili yuvası olan kart, H81'de DDR3).
 - `src/scenes/workbench/` — Montaj masası (Motherboard, MotherboardSlot)
 - Anakart modelleri: `src/resources/BoardData.gd` + `data/boards/*.tres` (ad, dönem, soket, RAM türü, renkler) ve
   yerleşim sahneleri (modern: `Motherboard.tscn`, diğerleri: `src/scenes/workbench/boards/*.tscn`). Kod (`Motherboard.gd`)

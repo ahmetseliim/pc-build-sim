@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="ScenarioData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/resources/ScenarioData.gd" id="1_scenario"]
+
+[resource]
+script = ExtResource("1_scenario")
+title = "Görüntü Gelmiyor (Ekran Kartı Değişimi)"
+shop_stage = 1
+price = 500
+customer = "Cem Bey"
+complaint = ""
+complaints = Array[String](["Fanlar dönüyor ama ekrana görüntü gelmiyor. Ekran kartı yanmış olabilir mi?", "Bilgisayar açılıyor, her şey çalışıyor gibi ama monitör 'sinyal yok' diyor.", "Oyun oynarken ekran bir anda gitti. Şimdi fanlar dönüyor ama hiç görüntü gelmiyor."])
+menu_description = "Ekran kartı cevap vermiyor. BIOS'tan teşhis et, PCIe kablosunu çıkarıp kartı değiştir ve kabloyu geri bağla."
+hint = "İpucu: Ekran kartına tıklayınca PCIe kablosu çıkar ve kart yerinden kalkar. Kartı tutup envantere taşı, yenisini yuvaya tak, sonra PCIe kablosunu geri bağla."
+required_upgrade = "raf_gpu"
+offer_part_type = "gpu"
+base_budget = 2400
+board_paths = Array[String](["res://data/boards/modern_z790.tres", "res://data/boards/itx_b650.tres"])
+preinstalled_parts = Array[String](["cpu", "paste", "fan", "ram", "ram", "m2", "sata", "gpu", "psu", "atx24", "eps8", "pcie8", "satapwr", "satadata", "cpufan"])
+inventory_parts = Array[String](["gpu"])
+faulty_part = "gpu"
+removable_parts = Array[String](["gpu"])
+early_boot = true

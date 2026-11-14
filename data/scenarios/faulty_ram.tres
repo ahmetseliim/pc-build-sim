@@ -9,6 +9,7 @@ shop_stage = 1
 price = 400
 customer = "Kemal Usta"
 complaint = "Bilgisayar açılıyor gibi oluyor ama ekrana görüntü gelmiyor, kasadan da bip bip ses geliyor. Dün de birkaç kere mavi ekran verip kendini kapatmıştı."
+complaints = Array[String](["Bilgisayar açılıyor gibi oluyor ama ekrana görüntü gelmiyor, kasadan da bip bip ses geliyor. Dün de birkaç kere mavi ekran verip kendini kapatmıştı.", "Bilgisayar açılmıyor, kasadan kısa kısa bip sesleri geliyor. Dün mavi ekran verip kendiliğinden yeniden başlamıştı.", "Görüntü gelmiyor, kasa bip bip diye ötüyor. Son zamanlarda programlar da sebepsiz yere kapanıyordu."])
 menu_description = "Bilgisayar bip sesi veriyor ve görüntü yok. Arızalı RAM'i BIOS'tan bul, değiştir."
 hint = "İpucu: BIOS hangi RAM yuvasının arızalı olduğunu söyler. RAM'i sökmek için yuvanın iki ucundaki mandallara tıkla; RAM yerinden kalkınca basılı tutup envantere taşı. Sonra \"YENİ\" etiketli RAM'i boş yuvaya sürükle."
 board_paths = Array[String](["res://data/boards/modern_z790.tres", "res://data/boards/old_office_h81.tres", "res://data/boards/itx_b650.tres"])

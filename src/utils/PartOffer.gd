@@ -85,10 +85,13 @@ static func options(scenario: ScenarioData, board: BoardData) -> Array[Dictionar
 		result.append(_option(used_part, scenario.price))
 	return result
 
+# Karta uyum: RAM kartın türüne (H81'de DDR3), M.2 / SATA / ekran kartı ilgili yuvası olan karta, güç kaynağı güç kaynağı yuvası (ATX 24-pin bağlantısı) olan karta uyar
 static func _fits_board(part: ComponentData, type: String, board: BoardData) -> bool:
+	if board == null:
+		return true
 	if type == "ram":
-		return board == null or part.ram_type == board.ram_type
-	if type in ["m2", "sata", "gpu"] and board != null:
+		return part.ram_type == board.ram_type
+	if type in ["m2", "sata", "gpu", "psu"]:
 		return GameManager.slot_types_of(board).has(type)
 	return true
 
@@ -114,6 +117,9 @@ static func spec_text(part: ComponentData) -> String:
 			return "%s SATA" % PartArt.capacity_text(part.capacity_gb)
 		"psu":
 			return "%d W" % part.watt
+		"gpu":
+			var vram: int = (part as GPUData).vram_gb if part is GPUData else 0
+			return "%d GB" % vram if vram > 0 else part.model
 	return part.model
 
 # Seçimin sonucu. Dönüş: outcome (REACTION_LINES anahtarı), mood ("happy"/"normal"/"sad"), leaves (müşteri gider),

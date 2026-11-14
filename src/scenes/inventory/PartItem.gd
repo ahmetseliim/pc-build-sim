@@ -127,8 +127,18 @@ func refresh_interaction() -> void:
 	if is_removable and not data.is_cable:
 		mouse_filter = Control.MOUSE_FILTER_STOP
 		mouse_default_cursor_shape = Control.CURSOR_DRAG if is_loose else Control.CURSOR_ARROW
-		var how: String = "mandalları aç" if data.part_type == "ram" else "vidasını sök"
-		tooltip_text = "Tutup envantere sürükle" if is_loose else "Sökmek için önce %s" % how
+		# RAM mandalla, M.2 vidayla kilitlidir; PSU, GPU ve SATA dokununca doğrudan çıkar
+		var how: String = ""
+		if data.part_type == "ram":
+			how = "mandalları aç"
+		elif data.part_type == "m2":
+			how = "vidasını sök"
+		if is_loose:
+			tooltip_text = "Tutup envantere sürükle"
+		elif how != "":
+			tooltip_text = "Sökmek için önce %s" % how
+		else:
+			tooltip_text = "Sökmek için tıkla"
 	elif is_broken:
 		mouse_filter = Control.MOUSE_FILTER_STOP
 		mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND

@@ -90,8 +90,14 @@ func _preinstall_scenario_parts() -> void:
 	var types: Array[String] = scenario.preinstalled_parts
 	var cables: Array[ComponentData] = []
 
+	# Yerinden çıkmış gelen parçalar takılı gelmez (envanterde; GameManager._pick_loose_parts)
+	var loose: Array[String] = GameManager.scenario_loose.duplicate()
+
 	# Önce parçalar
 	for type: String in types:
+		if type in loose:
+			loose.erase(type) # Aynı türden yalnız biri çıkmış olabilir (örn. iki RAM'den biri)
+			continue
 		var data: ComponentData = InventoryManager.create_part(type)
 		if data.part_type == "paste":
 			continue # Macun yuvaya takılmaz; işlemciye sürülür (aşağıda)
@@ -282,17 +288,80 @@ func _on_part_extract_requested(part_node: Control) -> void:
 		# Tezgâhtan alınan çıkma parça arızalı çıktı: yenisi kasadan yeniden alınır (alış fiyatı bir kez daha düşer)
 		if part.data.is_faulty:
 			CareerManager.replace_faulty_part(part.data)
-	elif not part.data.is_new:
-		# Sağlam (asıl) parçayı sökmek yanlış teşhistir
+	elif not part.data.is_new and _removal_is_misdiagnosis(part.data.part_type):
+		# Arızalı olan türden sağlam (asıl) parçayı sökmek yanlış teşhistir
 		EventBus.mistake_made.emit("healthy_removed")
+	_conceal_connectors_of(part.data.part_type)
 	# Elde taşınma hissi
 	part.pivot_offset = part.size / 2.0
 	create_tween().tween_property(part, "scale", Vector2(1.1, 1.1), 0.12).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	_check_complete()
 
+# Sağlam parçayı sökmek yalnız arıza teşhisi yapılan türde hatadır (örn. iki RAM'den sağlamını sökmek).
+# Arızası olmayan işte (NVMe yükseltmede eski SATA) sökülmesi istenen parça hata sayılmaz.
+func _removal_is_misdiagnosis(type: String) -> bool:
+	var scenario: ScenarioData = GameManager.current_scenario
+	return scenario != null and scenario.faulty_part == type
+
+# Cihaz söküldü: onun konnektörleri (ekran kartının PCIe girişi, SATA diskin güç ve veri girişi) yeniden gizlenir
+func _conceal_connectors_of(type: String) -> void:
+	var connectors: Array = []
+	match type:
+		"gpu":
+			connectors = [gpu_power]
+		"sata":
+			connectors = [sata_power, sata_data]
+	for connector: MotherboardSlot in connectors:
+		if connector and not connector.is_occupied:
+			connector.visible = false
+
+# Güç kaynağı, ekran kartı ve SATA disk kilitliyken tıklanınca bağlı kabloları çıkıp envantere döner, parça yerinden kalkar
+# (tek tıkla "kilit açılır"; sonra tutup envantere taşınır). Dönüş: parça bu türden ve açıldı mı.
+func _release_part(part: PartItem, slot: MotherboardSlot) -> bool:
+	if part.is_loose or not slot.accepted_type in ["gpu", "psu", "sata"]:
+		return false
+	var plugs: Array[PartItem] = _dependent_cables(slot.accepted_type)
+	for plug: PartItem in plugs:
+		var header: MotherboardSlot = plug.get_parent() as MotherboardSlot
+		header.uninstall()
+		cable_layer.remove_cable(plug)
+		if plug.is_broken:
+			GameManager.broken_parts.erase(plug.data.part_type)
+		plug.unplace()
+		EventBus.part_return_requested.emit(plug)
+	part.is_loose = true
+	part.pivot_offset = part.size / 2.0
+	var pop: Tween = create_tween().set_parallel(true)
+	pop.tween_property(part, "scale", Vector2(1.04, 1.04), 0.16).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	part.refresh_interaction()
+	AudioManager.play_sfx("latch")
+	var what: String = {"gpu": "Ekran kartının mandalı açıldı", "psu": "Güç kaynağının vidaları söküldü", "sata": "SATA diskin vidası söküldü"}[slot.accepted_type]
+	EventBus.info_requested.emit("%s%s. Parçayı tutup envantere taşı." % [what, " ve bağlı kablolar çıkarıldı" if not plugs.is_empty() else ""])
+	_check_complete()
+	return true
+
+# Bu cihaz çıkarılınca birlikte çıkması gereken takılı kablolar: PSU'nun bütün güç kabloları, ekran kartının PCIe kablosu, SATA diskin güç ve veri kablosu
+func _dependent_cables(type: String) -> Array[PartItem]:
+	var result: Array[PartItem] = []
+	for slot: MotherboardSlot in slots:
+		if not slot.is_occupied:
+			continue
+		for child: Node in slot.get_children():
+			var plug: PartItem = child as PartItem
+			if plug == null or not plug.data.is_cable:
+				continue
+			var from: String = plug.data.cable_from
+			if (type == "psu" and from.begins_with("psu_")) \
+					or (type == "gpu" and plug.data.part_type == "pcie8") \
+					or (type == "sata" and plug.data.part_type in ["satapwr", "satadata"]):
+				result.append(plug)
+	return result
+
 # Mandallar kapalıyken parça tutulmaya çalışıldı: mandalları göster
 func _on_part_locked_touched(part_node: Control) -> void:
 	var slot: MotherboardSlot = part_node.get_parent() as MotherboardSlot
+	if slot and _release_part(part_node as PartItem, slot):
+		return
 	if slot and slot.accepted_type == "ram":
 		slot.flash_latches()
 		EventBus.warning_requested.emit("Önce RAM yuvasının iki ucundaki mandalları aç (mandallara tıkla)!")
@@ -495,8 +564,9 @@ func _on_fan_unmounted() -> void:
 func _check_complete() -> void:
 	var done: bool = GameManager.fan_mounted and not GameManager.paste_old and GameManager.m2_secured \
 		and GameManager.broken_parts.is_empty()
+	var sata_optional: bool = GameManager.sata_is_optional()
 	for slot: MotherboardSlot in slots:
-		if not slot.is_occupied:
+		if not slot.is_occupied and not (sata_optional and slot.accepted_type in ["sata", "satapwr", "satadata"]):
 			done = false
 	GameManager.mark_complete(done)
 

@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="ScenarioData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/resources/ScenarioData.gd" id="1_scenario"]
+
+[resource]
+script = ExtResource("1_scenario")
+title = "Sekme Açınca Donuyor (RAM Yükseltme)"
+shop_stage = 1
+price = 300
+customer = "Deniz Bey"
+complaint = ""
+complaints = Array[String](["Birden fazla sekme açınca bilgisayar donuyor. Hafıza yetmiyor galiba, yükseltebilir misin?", "Tarayıcıda biraz sekme açınca her şey kasılıyor, ara sıra mavi ekran da veriyor. RAM'e bir bakar mısın?", "Sekme açınca bilgisayar donuyor, bazen kendiliğinden kapanıyor. Bellek yükseltmek lazım sanırım."])
+menu_description = "Bellek yetersiz ve bir RAM çubuğu hatalı. Hangisinin sorunlu olduğunu BIOS'tan bul, sök ve bütçeye uygun yenisini tak."
+hint = "İpucu: BIOS hangi RAM yuvasının arızalı olduğunu söyler. RAM'i sökmek için yuvanın iki ucundaki mandallara tıkla; RAM yerinden kalkınca basılı tutup envantere taşı. Sonra \"YENİ\" etiketli RAM'i boş yuvaya sürükle."
+offer_part_type = "ram"
+base_budget = 800
+board_paths = Array[String](["res://data/boards/modern_z790.tres", "res://data/boards/old_office_h81.tres", "res://data/boards/itx_b650.tres"])
+preinstalled_parts = Array[String](["cpu", "paste", "fan", "ram", "ram", "m2", "sata", "gpu", "psu", "atx24", "eps8", "pcie8", "satapwr", "satadata", "cpufan"])
+inventory_parts = Array[String](["ram"])
+faulty_part = "ram"
+removable_parts = Array[String](["ram"])
+early_boot = true

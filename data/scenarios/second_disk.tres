@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="ScenarioData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/resources/ScenarioData.gd" id="1_scenario"]
+
+[resource]
+script = ExtResource("1_scenario")
+title = "Yer Kalmadı (İkinci Disk)"
+shop_stage = 1
+price = 350
+customer = "Kerem Bey"
+complaint = ""
+complaints = Array[String](["Bilgisayarda yer kalmadı, fotoğraflarım ve oyunlarım sığmıyor. Bir disk daha taktırmak istiyorum.", "Diskim ağzına kadar doldu. İkinci bir SSD takabilir misin?", "Dosya kaydedemiyorum, 'disk dolu' diyor. Yanına bir depolama ekleyelim."])
+menu_description = "Bilgisayara ikinci bir SATA SSD takılacak. Diski yerine tak, güç ve veri kablolarını bağla."
+hint = "İpucu: SATA SSD'yi SATA yuvasına tak. Sonra SSD'nin yanında beliren GÜÇ ve VERİ girişlerine envanterdeki SATA kablolarını sürükle."
+required_upgrade = "raf_ssd"
+offer_part_type = "sata"
+base_budget = 640
+board_paths = Array[String](["res://data/boards/modern_z790.tres", "res://data/boards/old_office_h81.tres"])
+preinstalled_parts = Array[String](["cpu", "paste", "fan", "ram", "ram", "m2", "gpu", "psu", "atx24", "eps8", "pcie8", "cpufan"])
+inventory_parts = Array[String](["sata", "satapwr", "satadata"])
+early_boot = false

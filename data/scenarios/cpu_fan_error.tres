@@ -9,6 +9,7 @@ shop_stage = 1
 price = 150
 customer = "Burak Bey"
 complaint = "Bilgisayarı temizlemek için kasasını açmıştım, kapattıktan sonra açılışta 'CPU Fan Error! Press F1' diye bir uyarı çıkıyor. F1'e basınca açılıyor ama çok ısınıp kapanıyor."
+complaints = Array[String](["Bilgisayarı temizlemek için kasasını açmıştım, kapattıktan sonra açılışta 'CPU Fan Error! Press F1' diye bir uyarı çıkıyor. F1'e basınca açılıyor ama çok ısınıp kapanıyor.", "Kasayı temizlemek için açmıştım. Şimdi açılışta fan uyarısı veriyor, F1'e basınca da çok ısınıp kapanıyor.", "Toz almak için kasayı açıp kapattım. O günden beri açılışta 'CPU Fan Error' çıkıyor, bilgisayar da sürekli ısınıyor."])
 menu_description = "Kasa temizliğinden sonra fan kablosu takılmadan kalmış. Arızayı bul ve fanı CPU_FAN girişine bağla."
 hint = "İpucu: BIOS'taki uyarıyı oku. İşlemci fanının kablosu anakarttaki FAN girişine takılı mı? Envanterdeki fan kablosunu fandan girişe sürükle."
 board_paths = Array[String](["res://data/boards/modern_z790.tres", "res://data/boards/old_office_h81.tres", "res://data/boards/itx_b650.tres"])

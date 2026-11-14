@@ -39,6 +39,13 @@ const CABLE: String = "res://data/scenarios/repair_broken_cable.tres"
 const RAM: String = "res://data/scenarios/faulty_ram.tres"
 const PASTE: String = "res://data/scenarios/thermal_paste_renewal.tres"
 const SSD: String = "res://data/scenarios/dead_ssd.tres"
+const RAM_UPGRADE: String = "res://data/scenarios/ram_upgrade.tres"
+const LOOSE: String = "res://data/scenarios/loose_part.tres"
+const SECOND_DISK: String = "res://data/scenarios/second_disk.tres"
+const NVME: String = "res://data/scenarios/nvme_upgrade.tres"
+const PSU_SWAP: String = "res://data/scenarios/psu_swap.tres"
+const GPU_SWAP: String = "res://data/scenarios/gpu_swap.tres"
+const REVIVE: String = "res://data/scenarios/revive_old_pc.tres"
 
 ## İlk günler planlıdır: her yeni iş türü ilk kez gelir, sonra tekrar edilir
 const PLANNED_DAYS: Array = [
@@ -46,8 +53,11 @@ const PLANNED_DAYS: Array = [
 	[RAM, CABLE, FAN],
 	[PASTE, SSD, RAM],
 ]
-## Planlı günlerden sonra rastgele seçilen tamir işleri
-const CAREER_POOL: Array[String] = [FAN, CABLE, RAM, PASTE, SSD]
+## Planlı günlerden sonra rastgele seçilen tamir işleri (13 iş; rafı gereken işler rafı alınmadıkça günde en fazla bir müşteri gelir)
+const CAREER_POOL: Array[String] = [
+	FAN, CABLE, RAM, PASTE, SSD,
+	RAM_UPGRADE, LOOSE, SECOND_DISK, NVME, PSU_SWAP, GPU_SWAP, REVIVE,
+]
 
 var is_career: bool = false ## false: test listesinden açılan tek iş (para/kayıt etkilenmez)
 var job_active: bool = false

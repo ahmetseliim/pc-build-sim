@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="ScenarioData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/resources/ScenarioData.gd" id="1_scenario"]
+
+[resource]
+script = ExtResource("1_scenario")
+title = "Atmaya Kıyamadım (Eski Bilgisayarı Canlandırma)"
+shop_stage = 1
+price = 500
+customer = "Fatma Teyze"
+complaint = ""
+complaints = Array[String](["Eski ofis bilgisayarımı atmaya kıyamadım. Biraz hızlandırıp çalışır hâle getirebilir misin? Param kısıtlı.", "Yıllardır duran bir bilgisayarım var. Bir SSD ve biraz bellekle yeniden hayata dönebilir mi?", "Çocuklar için eski bilgisayarı canlandırmak istiyorum. Çok pahalıya getirme lütfen."])
+menu_description = "Eski H81 bilgisayarına SSD ve ikinci RAM takılacak. RAM'i tak, SATA SSD'yi tak ve kablolarını bağla."
+hint = "İpucu: RAM'i boş RAM yuvasına tak. SATA SSD'yi SATA yuvasına tak, sonra beliren GÜÇ ve VERİ girişlerine SATA kablolarını sürükle."
+required_upgrade = "raf_ssd"
+offer_part_type = "sata"
+base_budget = 820
+board_paths = Array[String](["res://data/boards/old_office_h81.tres"])
+preinstalled_parts = Array[String](["cpu", "paste", "fan", "ram", "psu", "atx24", "eps8", "cpufan"])
+inventory_parts = Array[String](["sata", "satapwr", "satadata", "ram"])
+early_boot = false

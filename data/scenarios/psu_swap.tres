@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="ScenarioData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/resources/ScenarioData.gd" id="1_scenario"]
+
+[resource]
+script = ExtResource("1_scenario")
+title = "Hiç Tepki Yok (Güç Kaynağı Değişimi)"
+shop_stage = 1
+price = 550
+customer = "Hakan Bey"
+complaint = ""
+complaints = Array[String](["Düğmeye basıyorum, hiç tepki yok. Ne fan dönüyor ne ışık yanıyor.", "Dün bir çıtırtı sesi geldi, sonra bilgisayar öldü. Düğmeye basınca hiçbir şey olmuyor.", "Prizi ve uzatmayı değiştirdim ama bilgisayar hâlâ hiç tepki vermiyor."])
+menu_description = "Güç kaynağı ölmüş. BIOS'tan teşhis et, güç kablolarını sök, güç kaynağını değiştir ve kabloları yeniden bağla."
+hint = "İpucu: Güç kaynağına tıklayınca bağlı güç kabloları çıkıp envantere döner. Kaynağı tutup envantere taşı, yenisini yuvaya tak, sonra bütün güç kablolarını fişlerine geri sürükle."
+required_upgrade = "raf_psu"
+offer_part_type = "psu"
+base_budget = 980
+board_paths = Array[String](["res://data/boards/modern_z790.tres", "res://data/boards/old_office_h81.tres", "res://data/boards/itx_b650.tres"])
+preinstalled_parts = Array[String](["cpu", "paste", "fan", "ram", "ram", "m2", "sata", "gpu", "psu", "atx24", "eps8", "pcie8", "satapwr", "satadata", "cpufan"])
+inventory_parts = Array[String](["psu"])
+faulty_part = "psu"
+removable_parts = Array[String](["psu"])
+early_boot = true

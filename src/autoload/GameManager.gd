@@ -16,16 +16,47 @@ const SCENARIOS: Array[String] = [
 	"res://data/scenarios/dead_ssd.tres",
 	"res://data/scenarios/cpu_fan_error.tres",
 	"res://data/scenarios/full_build.tres",
+	"res://data/scenarios/ram_upgrade.tres",
+	"res://data/scenarios/loose_part.tres",
+	"res://data/scenarios/second_disk.tres",
+	"res://data/scenarios/nvme_upgrade.tres",
+	"res://data/scenarios/psu_swap.tres",
+	"res://data/scenarios/gpu_swap.tres",
+	"res://data/scenarios/revive_old_pc.tres",
 ]
 
-# Bozuk kabloya göre müşteri şikâyeti (senaryoda şikâyet boşsa kullanılır)
+# Bozuk kabloya göre müşteri şikâyetleri (senaryoda şikâyet yoksa kullanılır; biri rastgele seçilir)
 const COMPLAINTS: Dictionary = {
-	"atx24": "Bilgisayar hiç açılmıyor. Düğmeye basıyorum, ne fan dönüyor ne ışık yanıyor.",
-	"eps8": "Fanlar dönüyor ama ekrana hiçbir şey gelmiyor. İşlemci mi gitti acaba?",
-	"pcie8": "Oyun açınca ekran gidiyor, ekran kartını hiç algılamıyor.",
-	"satapwr": "Fotoğraflarımın olduğu ikinci disk birden görünmez oldu.",
-	"satadata": "Fotoğraflarımın olduğu ikinci disk birden görünmez oldu.",
-	"cpufan": "Açılışta 'CPU Fan Error' diye bir uyarı çıkıyor, bilgisayar da çok ısınıp kapanıyor.",
+	"atx24": [
+		"Bilgisayar hiç açılmıyor. Düğmeye basıyorum, ne fan dönüyor ne ışık yanıyor.",
+		"Dün akşam kapattım, bugün düğmeye bastım, hiçbir tepki yok. Prize bağlı, ışık bile yanmıyor.",
+		"Bilgisayar sapasağlam duruyordu ama şimdi tamamen ölü gibi. Ne ses var ne ışık.",
+	],
+	"eps8": [
+		"Fanlar dönüyor ama ekrana hiçbir şey gelmiyor. İşlemci mi gitti acaba?",
+		"Düğmeye basınca fanlar dönüp duruyor, ekran ise simsiyah kalıyor.",
+		"Açılıyor gibi oluyor ama ekrana bir görüntü gelmiyor, klavye ışığı da yanmıyor.",
+	],
+	"pcie8": [
+		"Oyun açınca ekran gidiyor, ekran kartını hiç algılamıyor.",
+		"Ekran kartının fanları dönmüyor, oyunlarda görüntü bir anda karardı.",
+		"Ekran kartım artık yokmuş gibi davranıyor, bilgisayar onu hiç görmüyor.",
+	],
+	"satapwr": [
+		"Fotoğraflarımın olduğu ikinci disk birden görünmez oldu.",
+		"İkinci diskim Bilgisayarım'da yok, dün gece hâlâ oradaydı.",
+		"Arşiv diskimi bilgisayar artık hiç görmüyor, içinde yıllarca fotoğrafım var.",
+	],
+	"satadata": [
+		"Fotoğraflarımın olduğu ikinci disk birden görünmez oldu.",
+		"İkinci diskim Bilgisayarım'da yok, dün gece hâlâ oradaydı.",
+		"Arşiv diskimi bilgisayar artık hiç görmüyor, içinde yıllarca fotoğrafım var.",
+	],
+	"cpufan": [
+		"Açılışta 'CPU Fan Error' diye bir uyarı çıkıyor, bilgisayar da çok ısınıp kapanıyor.",
+		"Her açılışta F1'e basmamı isteyen bir fan uyarısı çıkıyor, makine de çok ısınıyor.",
+		"İşlemci fanı hatası veriyor, bilgisayar biraz çalışınca ısınıp kendini kapatıyor.",
+	],
 }
 
 var current_scenario: ScenarioData = null
@@ -33,6 +64,9 @@ var current_board: BoardData = null ## Bu işte gelen bilgisayarın anakartı
 var board_slot_types: Array[String] = [] ## Yüklü anakartta bulunan yuva türleri
 var scenario_broken: Array[String] = [] ## Bu oturumda bozuk gelen kablolar (rastgele seçim çözülmüş)
 var scenario_inventory: Array[String] = [] ## Bu oturumda envantere konan parçalar
+## Bu işte yerinden çıkmış gelen parça/kablo türleri (ScenarioData.loose_parts'tan seçilir): takılı gelmez, envanterdedir
+var scenario_loose: Array[String] = []
+var _complaint_roll: int = 0 ## Şikâyet listesinden hangisinin seçileceği (iş hazırlanırken bir kez atılır: tezgâh ve iş emri aynı metni gösterir)
 ## Tezgâh teklifinde seçilen çıkma parça tedarikçiden arızalı geldiyse onun katalog kimliği (InventoryManager.setup bu parçayı arızalı işaretler)
 var scenario_faulty_id: String = ""
 ## İş hazırlanınca çağrılır (CareerManager: tezgâhta seçilen teklif parçasını ve kartı işe uygular). GameManager kariyeri tanımaz.
@@ -120,13 +154,34 @@ func _prepare(scenario: ScenarioData) -> void:
 	if scenario.spare_for_broken:
 		scenario_inventory.append_array(scenario_broken)
 	scenario_faulty_id = ""
+	_complaint_roll = randi()
+	_pick_loose_parts(scenario)
 	if job_hook.is_valid():
 		job_hook.call()
 
-# Müşterinin şikâyeti
+# Yerinden çıkmış gelecek parçaları seçer: seçilenler envantere konur, atölyede takılı gelmez (Motherboard._preinstall_scenario_parts).
+# Yalnız hazır takılı listesinde geçen ve bu kartta yuvası olan türler adaydır.
+func _pick_loose_parts(scenario: ScenarioData) -> void:
+	scenario_loose.clear()
+	if scenario.loose_parts.is_empty():
+		return
+	var slot_types: Array[String] = slot_types_of(current_board)
+	var pool: Array[String] = []
+	for type: String in scenario.loose_parts:
+		if type in scenario.preinstalled_parts and type in slot_types and not type in pool:
+			pool.append(type)
+	pool.shuffle()
+	var count: int = pool.size() if scenario.loose_count <= 0 else mini(scenario.loose_count, pool.size())
+	for i: int in range(count):
+		scenario_loose.append(pool[i])
+		scenario_inventory.append(pool[i])
+
+# Müşterinin şikâyeti: senaryonun şikâyet listesinden (iş hazırlanırken atılan zarla) biri, yoksa tek şikâyet metni, yoksa bozuk kabloya göre
 func get_complaint() -> String:
 	if current_scenario == null:
 		return ""
+	if not current_scenario.complaints.is_empty():
+		return current_scenario.complaints[_complaint_roll % current_scenario.complaints.size()]
 	if current_scenario.complaint != "":
 		return current_scenario.complaint
 	for type: String in scenario_broken:
@@ -134,8 +189,13 @@ func get_complaint() -> String:
 		if type in ["satapwr", "satadata"] and not board_has("m2"):
 			return "Bilgisayar açılıyor ama Windows gelmiyor, ekranda disk bulunamadı yazıyor."
 		if COMPLAINTS.has(type):
-			return COMPLAINTS[type]
+			var lines: Array = COMPLAINTS[type]
+			return lines[_complaint_roll % lines.size()]
 	return "Bilgisayarımda bir sorun var, bakabilir misin?"
+
+# NVMe yükseltmede eski SATA disk sökülebilir parçadır: yuvası boş kalsa da bilgisayar tamam sayılır, BIOS da SATA aramaz
+func sata_is_optional() -> bool:
+	return current_scenario != null and "sata" in current_scenario.removable_parts and current_scenario.faulty_part != "sata"
 
 # Yüklü anakartta bu türden yuva var mı?
 func board_has(type: String) -> bool:

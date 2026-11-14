@@ -9,6 +9,7 @@ shop_stage = 2
 price = 1500
 customer = "Zeynep Hanım"
 complaint = "Parçaları aldım ama toplamaya vaktim yok. Hepsini takıp kablolarını bağlayıp çalışır halde teslim edebilir misin?"
+complaints = Array[String](["Parçaları aldım ama toplamaya vaktim yok. Hepsini takıp kablolarını bağlayıp çalışır halde teslim edebilir misin?", "Parçaların hepsi bende. Ben toplayamam; hepsini takıp kablolarını bağlayarak çalışır halde bana verir misin?", "Bir bilgisayar parçası topladım ama montaj bana göre değil. Hepsini takıp çalışır hale getirebilir misin?"])
 menu_description = "Tüm parçaları anakarta tak, macun sür, fanı vidala ve kabloları bağla."
 board_paths = Array[String](["res://data/boards/modern_z790.tres"])
 preinstalled_parts = Array[String]([])

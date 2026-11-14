@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="ScenarioData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/resources/ScenarioData.gd" id="1_scenario"]
+
+[resource]
+script = ExtResource("1_scenario")
+title = "Taşıdıktan Sonra Açılmıyor (Gevşek Parça)"
+shop_stage = 1
+price = 200
+customer = "Ayşe Hanım"
+complaint = ""
+complaints = Array[String](["Bilgisayarı taşıdıktan sonra açılmıyor. Nakliyede içeride bir şeyler oynamış olabilir.", "Odamı değiştirdim, bilgisayarı yeni yerine kurdum ama bir türlü düzgün açılmadı. İçinde bir şey çıkmış galiba.", "Taşınırken kasa epey sallandı. Şimdi düğmeye basıyorum, bilgisayar düzgün çalışmıyor."])
+menu_description = "Taşınırken bir RAM ya da güç kablosu yerinden çıkmış. Eksik olanı BIOS'tan bul ve envanterdeki parçayı yerine tak."
+hint = "İpucu: BIOS'un neyi bulamadığını oku. Envanterdeki parça kasanın içinde yerinden çıkmış: RAM ise boş RAM yuvasına, kablo ise fişine sürükle."
+board_paths = Array[String](["res://data/boards/modern_z790.tres", "res://data/boards/old_office_h81.tres", "res://data/boards/itx_b650.tres"])
+preinstalled_parts = Array[String](["cpu", "paste", "fan", "ram", "ram", "m2", "sata", "gpu", "psu", "atx24", "eps8", "pcie8", "satapwr", "satadata", "cpufan"])
+inventory_parts = Array[String]([])
+inventory_is_new = false
+loose_parts = Array[String](["ram", "atx24", "eps8"])
+loose_count = 1
+early_boot = true

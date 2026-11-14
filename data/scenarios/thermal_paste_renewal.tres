@@ -9,6 +9,7 @@ shop_stage = 1
 price = 500
 customer = "Elif Hanım"
 complaint = "Bilgisayarım son zamanlarda çok ısınıyor, fanı da sürekli bağırıyor. Termal macunu yenileyebilir misin?"
+complaints = Array[String](["Bilgisayarım son zamanlarda çok ısınıyor, fanı da sürekli bağırıyor. Termal macunu yenileyebilir misin?", "Bilgisayar yazın çok ısındı, fanı da uçak gibi ses çıkarıyor. Macunu yenilemek lazım galiba.", "Oyun açınca bilgisayar kızgın tava gibi oluyor. Termal macunu yenilersen belki düzelir."])
 menu_description = "Fanı sök, kurumuş macunu alkollü bezle temizle, yeni macun sür ve fanı geri vidala."
 hint = "İpucu: Fanı sökmek için vidalarına basılı tut. Sonra alkollü bezi işlemcinin üstüne sürükleyip ovalayarak eski macunu temizle."
 board_paths = Array[String](["res://data/boards/modern_z790.tres", "res://data/boards/old_office_h81.tres", "res://data/boards/itx_b650.tres"])

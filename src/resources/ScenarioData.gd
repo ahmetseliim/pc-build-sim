@@ -10,6 +10,9 @@ extends Resource
 @export var price: int = 0 ## İşin ücreti (₺); hatalar bundan keser
 @export var customer: String = ""
 @export_multiline var complaint: String = "" ## Boşsa arızaya göre otomatik şikâyet yazılır
+## Müşterinin söyleyebileceği şikâyetler (genelde 3). Doluysa iş her hazırlanışında biri rastgele seçilir (complaint yok sayılır);
+## tezgâh ve iş emri aynı metni gösterir (GameManager.get_complaint)
+@export var complaints: Array[String] = []
 @export_multiline var menu_description: String = ""
 @export_multiline var hint: String = "" ## İş emri kartında gösterilen ipucu
 ## Bu işi kabul etmek için gereken dükkân alımı (data/upgrades/*.tres id'si, örn. "raf_ssd"). Boşsa her zaman yapılabilir.
@@ -38,6 +41,13 @@ extends Resource
 @export var faulty_part: String = ""
 ## Tıklanarak sökülebilen parça türleri (sağlam olan envantere döner, arızalı atılır)
 @export var removable_parts: Array[String] = []
+
+@export_group("Gevşek parça")
+## Hazır bilgisayarda yerinden çıkmış gelen parça/kablo türleri (preinstalled_parts içinde geçmeli; örn. "ram", "atx24"):
+## takılı gelmez, envantere konur, BIOS "bulunamadı" der. Kartta olmayan tür seçilmez.
+@export var loose_parts: Array[String] = []
+## loose_parts içinden kaç tanesi (rastgele) yerinden çıksın; 0: hepsi
+@export var loose_count: int = 0
 
 @export_group("Akış")
 @export var early_boot: bool = false ## "Bilgisayarı Başlat" baştan görünsün (arıza teşhisi için)

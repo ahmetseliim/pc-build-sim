@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="ScenarioData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/resources/ScenarioData.gd" id="1_scenario"]
+
+[resource]
+script = ExtResource("1_scenario")
+title = "Açılması 3 Dakika Sürüyor (NVMe Yükseltme)"
+shop_stage = 1
+price = 450
+customer = "Murat Bey"
+complaint = ""
+complaints = Array[String](["Bilgisayarın açılması 3 dakika sürüyor. Daha hızlı bir disk takılabilir mi?", "Her şey çok yavaş, Windows'un açılması bitmek bilmiyor. Eski diskim yetmiyor galiba.", "Oyunlar ve programlar çok geç yükleniyor. Daha hızlı bir SSD olsa iyi olur."])
+menu_description = "Yavaş SATA diskin yerine hızlı bir NVMe SSD takılacak: M.2 SSD'yi tak, vidasını sık, eski SATA diski sök."
+hint = "İpucu: M.2 SSD'yi M.2 yuvasına tak ve ucundaki vidaya basılı tutarak sık. Sonra eski SATA SSD'ye tıkla; kabloları çıkar, diski tutup envantere taşı."
+required_upgrade = "raf_nvme"
+offer_part_type = "m2"
+base_budget = 1000
+board_paths = Array[String](["res://data/boards/modern_z790.tres"])
+preinstalled_parts = Array[String](["cpu", "paste", "fan", "ram", "ram", "sata", "gpu", "psu", "atx24", "eps8", "pcie8", "satapwr", "satadata", "cpufan"])
+inventory_parts = Array[String](["m2"])
+removable_parts = Array[String](["m2", "sata"])
+early_boot = false
