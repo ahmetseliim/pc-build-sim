@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="ScenarioData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/resources/ScenarioData.gd" id="1_scenario"]
+
+[resource]
+script = ExtResource("1_scenario")
+title = "Aşırı Isınma (Toz Temizliği)"
+symptom_title = "Oyunda Yavaşlıyor, Çok Isınıyor"
+shop_stage = 1
+price = 400
+customer = "Hakan Bey"
+min_shop_level = 2
+complaints = Array[String](["Oyun açınca bilgisayar yavaşlıyor, kasadan uçak kalkıyor gibi ses geliyor. Çok da ısınıyor.", "Bilgisayar bir süre sonra donuyor. Fanlar son hızda dönüyor ama kasanın içi sobaya dönmüş.", "Yıllardır kasanın içini açmadım. Son zamanlarda çok ısınıyor, bir de yavaşladı. Temizlik mi lazım acaba?"])
+menu_description = "Fan ve ızgara toz içinde. Bilgisayarı BIOS'ta kontrol et, sonra tozu temizle. Hava kompresörü gerekir."
+hint = "İpucu: Fanın üstündeki tozu basılı tutup sürükleyerek temizle. Hava kompresörün geniş huzmeyle daha hızlı temizler."
+required_upgrade = "alet_kompresor"
+board_paths = Array[String](["res://data/boards/modern_z790.tres", "res://data/boards/old_office_h81.tres", "res://data/boards/itx_b650.tres"])
+preinstalled_parts = Array[String](["cpu", "paste", "fan", "ram", "ram", "m2", "sata", "gpu", "psu", "atx24", "eps8", "pcie8", "satapwr", "satadata", "cpufan"])
+inventory_parts = Array[String]([])
+dusty = true
+early_boot = true

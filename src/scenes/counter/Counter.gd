@@ -270,7 +270,7 @@ func _on_customer_at_counter() -> void:
 	if offering or not CareerManager.offer.is_empty():
 		text += " " + PartOffer.budget_line(customer.budget_type, CareerManager.offer_budget())
 	if offering:
-		_say(customer, text, _show_offer_card)
+		_say(customer, text, _show_build_card if CareerManager.is_build_offer() else _show_offer_card)
 	else:
 		_say(customer, text, _offer_workshop)
 
@@ -288,23 +288,7 @@ func _show_offer_card() -> void:
 	var budget: int = CareerManager.offer_budget()
 	var budget_type: String = CareerManager.offer_budget_type()
 	var zoom: float = UIStyle.ui_scale(get_viewport())
-	_offer_panel = PanelContainer.new()
-	var style: StyleBoxFlat = UIStyle.box(BUTTON_BG, 18, 4, INK, INK, 1, Vector2(6, 6))
-	style.set_content_margin_all(12)
-	style.content_margin_top = 8
-	_offer_panel.add_theme_stylebox_override("panel", style)
-	_offer_panel.anchor_left = 0.0
-	_offer_panel.anchor_right = 1.0
-	_offer_panel.anchor_top = 1.0
-	_offer_panel.anchor_bottom = 1.0
-	_offer_panel.offset_left = 16.0 + UIStyle.safe_side()
-	_offer_panel.offset_right = -16.0 - UIStyle.safe_side()
-	_offer_panel.offset_bottom = -22.0
-	_offer_panel.offset_top = -22.0
-	_offer_panel.grow_vertical = Control.GROW_DIRECTION_BEGIN
-	var box: VBoxContainer = VBoxContainer.new()
-	box.add_theme_constant_override("separation", 6)
-	_offer_panel.add_child(box)
+	var box: VBoxContainer = _new_offer_panel()
 
 	var head: HBoxContainer = HBoxContainer.new()
 	head.add_theme_constant_override("separation", 12)
@@ -334,6 +318,27 @@ func _show_offer_card() -> void:
 	ui.add_child(_offer_panel)
 	_offer_panel.modulate.a = 0.0
 	create_tween().tween_property(_offer_panel, "modulate:a", 1.0, 0.18)
+
+# Alt kenara oturan teklif paneli (teklif kartı ve bütçeli montaj kartı ortak kullanır); içine eklenecek kutuyu döndürür
+func _new_offer_panel() -> VBoxContainer:
+	_offer_panel = PanelContainer.new()
+	var style: StyleBoxFlat = UIStyle.box(BUTTON_BG, 18, 4, INK, INK, 1, Vector2(6, 6))
+	style.set_content_margin_all(12)
+	style.content_margin_top = 8
+	_offer_panel.add_theme_stylebox_override("panel", style)
+	_offer_panel.anchor_left = 0.0
+	_offer_panel.anchor_right = 1.0
+	_offer_panel.anchor_top = 1.0
+	_offer_panel.anchor_bottom = 1.0
+	_offer_panel.offset_left = 16.0 + UIStyle.safe_side()
+	_offer_panel.offset_right = -16.0 - UIStyle.safe_side()
+	_offer_panel.offset_bottom = -22.0
+	_offer_panel.offset_top = -22.0
+	_offer_panel.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	var box: VBoxContainer = VBoxContainer.new()
+	box.add_theme_constant_override("separation", 6)
+	_offer_panel.add_child(box)
+	return box
 
 # Tek seçenek: kademe etiketi + özellik, marka-model, toplam fiyat + parça kârı, uyarı/işçilik-parça satırı ve "Öner" düğmesi.
 # Yatay telefonda kart alçak kalsın diye satırlar yan yana dizilir.
@@ -371,6 +376,11 @@ func _offer_card(option: Dictionary, budget: int, budget_type: String, zoom: flo
 	var name_label: Label = _make_label("%s %s" % [option["brand"], option["model"]], 21, INK, true)
 	name_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	col.add_child(name_label)
+	# Güç hesabı: kart güç kaynağını aşıyorsa teklifle birlikte önerilen güç kaynağı
+	if option.has("note"):
+		var note: Label = _make_label("⚡ " + str(option["note"]), 14, Color("#9A5B13"), true)
+		note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		col.add_child(note)
 
 	# 3. satır: toplam fiyat, sağda parça kârı
 	var total: int = int(option["total"])
@@ -413,6 +423,115 @@ func _hide_offer_card() -> void:
 	if _offer_panel:
 		_offer_panel.queue_free()
 		_offer_panel = null
+
+# --- Bütçeli montaj kartı (müşteri bütün parçaları seçtirir) -----------------------
+
+var _build_ids: Dictionary = {} ## Seçilen parçalar: tür -> katalog kimliği
+var _build_options: Dictionary = {}
+var _build_total: Label = null
+var _build_confirm: Button = null
+
+# Her türden (işlemci, RAM, SSD, ekran kartı, güç kaynağı) bir parça seçilir; altta toplam, bütçe ve güç uyarısı görünür
+func _show_build_card() -> void:
+	_hide_offer_card()
+	_hide_bubble()
+	_build_options = CareerManager.offer_build_options()
+	_build_ids = {}
+	var budget: int = CareerManager.offer_budget()
+	var zoom: float = UIStyle.ui_scale(get_viewport())
+	var box: VBoxContainer = _new_offer_panel()
+	var purpose: String = GameManager.job_purpose()
+	var head: HBoxContainer = HBoxContainer.new()
+	head.add_theme_constant_override("separation", 12)
+	var title: Label = _make_label("Bilgisayarı birlikte seçelim%s" % (" (amaç: %s)" % purpose if purpose != "" else ""), 22, INK, true)
+	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	head.add_child(title)
+	var pill: PanelContainer = _dark_pill(999)
+	var customer_name: String = _at_counter.data.display_name if _at_counter else "Müşteri"
+	pill.add_child(_make_label("%s · toplam bütçe %s ₺" % [customer_name, _format_money(budget)], 18, BUTTON_BG, true))
+	head.add_child(pill)
+	box.add_child(head)
+	for type: String in PartOffer.BUILD_PARTS:
+		var row: HBoxContainer = HBoxContainer.new()
+		row.add_theme_constant_override("separation", 8)
+		var name_label: Label = _make_label(PartOffer.BUILD_PART_NAMES[type], 17, INK, true)
+		name_label.custom_minimum_size.x = 150.0 * zoom
+		row.add_child(name_label)
+		var group: ButtonGroup = ButtonGroup.new()
+		for option: Dictionary in _build_options.get(type, []):
+			var pick: Button = _shop_button("%s\n%s ₺" % [option["label"], _format_money(int(option["sell"]))], 14, 52.0)
+			pick.toggle_mode = true
+			pick.button_group = group
+			pick.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			pick.pressed.connect(_on_build_picked.bind(type, str(option["id"])))
+			row.add_child(pick)
+		box.add_child(row)
+	var foot: HBoxContainer = HBoxContainer.new()
+	foot.add_theme_constant_override("separation", 12)
+	_build_total = _make_label("", 18, INK, true)
+	_build_total.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_build_total.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	foot.add_child(_build_total)
+	var give_up: Button = _shop_button("Geri gönder", 16, 46.0)
+	give_up.pressed.connect(_give_up_offer)
+	foot.add_child(give_up)
+	_build_confirm = _shop_button("Bu montajı öner", 18, 46.0)
+	_build_confirm.pressed.connect(_on_build_confirmed)
+	foot.add_child(_build_confirm)
+	box.add_child(foot)
+	ui.add_child(_offer_panel)
+	_refresh_build_card()
+	_offer_panel.modulate.a = 0.0
+	create_tween().tween_property(_offer_panel, "modulate:a", 1.0, 0.18)
+
+func _on_build_picked(type: String, id: String) -> void:
+	_build_ids[type] = id
+	_refresh_build_card()
+
+# Seçime göre toplamı, bütçe durumunu ve onay düğmesini günceller
+func _refresh_build_card() -> void:
+	var selection: Dictionary = {}
+	for type: String in PartOffer.BUILD_PARTS:
+		for option: Dictionary in _build_options.get(type, []):
+			if str(option["id"]) == str(_build_ids.get(type, "")):
+				selection[type] = option
+	var budget: int = CareerManager.offer_budget()
+	var block: String = ""
+	if selection.size() < PartOffer.BUILD_PARTS.size():
+		block = "Her türden bir parça seç"
+		_build_total.text = "Seçilen: %d / %d parça" % [selection.size(), PartOffer.BUILD_PARTS.size()]
+		_build_total.add_theme_color_override("font_color", INK)
+	else:
+		var summary: Dictionary = PartOffer.build_summary(CareerManager.current_scenario(), selection)
+		var total: int = int(summary["total"])
+		var limit: int = PartOffer.spend_limit(CareerManager.offer_budget_type(), budget)
+		_build_total.text = "Toplam %s ₺ (işçilik %s + parça %s) · bütçe %s ₺" % [_format_money(total), _format_money(int(summary["labor"])), _format_money(int(summary["sell"])), _format_money(budget)]
+		_build_total.add_theme_color_override("font_color", RED if total > limit else (Color("#9A5B13") if total > budget else INK))
+		if not bool(summary["power_ok"]):
+			block = "Güç kaynağı yetmez: en az %d W" % int(summary["need_watt"])
+			_build_total.text += "\n⚡ " + block
+		elif CareerManager.money < int(summary["buy"]):
+			block = "Kasada %s ₺ eksik" % _format_money(int(summary["buy"]) - CareerManager.money)
+	_build_confirm.disabled = block != ""
+	_build_confirm.text = block if block != "" else "Bu montajı öner"
+
+# Montaj önerildi: müşteri amacına ve bütçesine göre tepki verir (bütçeyi çok aşarsa gider)
+func _on_build_confirmed() -> void:
+	var verdict: Dictionary = CareerManager.choose_build(_build_ids)
+	if not verdict.get("ok", false) and not verdict.get("leaves", false):
+		AudioManager.play_sfx("warn")
+		return
+	_hide_offer_card()
+	_shown_money = CareerManager.money
+	_update_money()
+	_at_counter.set_mood(verdict["mood"])
+	if verdict["leaves"]:
+		AudioManager.play_sfx("warn")
+		CareerManager.turn_away_current(int(verdict["total"]))
+		_say(_at_counter.data, verdict["line"], _leave_after.bind(1.2))
+	else:
+		AudioManager.play_sfx("coin")
+		_say(_at_counter.data, verdict["line"], _offer_workshop)
 
 # Oyuncu bir parça seçti: müşteri tepki verir. Bütçeyi çok aşarsa kırgın yüzle gider (kaçan kazanç),
 # aksi hâlde alış fiyatı kasadan düşer ve "Atölyeye Al" açılır.

@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="ScenarioData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/resources/ScenarioData.gd" id="1_scenario"]
+
+[resource]
+script = ExtResource("1_scenario")
+title = "Saat Sıfırlanıyor (BIOS Pili)"
+symptom_title = "Saat ve Tarih Hep Sıfırlanıyor"
+shop_stage = 1
+price = 250
+customer = "Nermin Hanım"
+min_shop_level = 2
+complaints = Array[String](["Bilgisayarı her kapattığımda saat başa sarıyor, hep 2000 yılına dönüyor.", "Her açılışta tarihi ve saati yeniden girmem gerekiyor. Pili mi bitti acaba?", "Bilgisayarın saati hep yanlış, internet sitelerinde de sertifika hatası çıkıyor."])
+menu_description = "Anakartın CMOS pili bitmiş. Pili değiştir, sonra BIOS'ta tarihi dükkân takvimine göre ayarla."
+hint = "İpucu: Pile tıklayınca tutucu açılır, pili envantere taşı, yenisini tak. Sonra BIOS'ta tarih ekranına tıklayıp tarihi takvime göre ayarla."
+board_paths = Array[String](["res://data/boards/modern_z790.tres", "res://data/boards/old_office_h81.tres", "res://data/boards/itx_b650.tres"])
+preinstalled_parts = Array[String](["cpu", "paste", "fan", "ram", "ram", "m2", "sata", "gpu", "psu", "atx24", "eps8", "pcie8", "satapwr", "satadata", "cpufan", "cmos"])
+inventory_parts = Array[String](["cmos"])
+faulty_part = "cmos"
+removable_parts = Array[String](["cmos"])
+clock_reset = true
+early_boot = true

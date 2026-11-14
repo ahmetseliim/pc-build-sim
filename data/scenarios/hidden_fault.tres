@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="ScenarioData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/resources/ScenarioData.gd" id="1_scenario"]
+
+[resource]
+script = ExtResource("1_scenario")
+title = "Gizli Arıza (Bip Kodu)"
+symptom_title = "Açılmıyor, Yalnız Bip Sesi Veriyor"
+shop_stage = 1
+price = 500
+customer = "Tarık Bey"
+min_shop_level = 2
+complaints = Array[String](["Bilgisayar açılmıyor, ekran siyah. Sadece kasadan bip bip sesi geliyor.", "Düğmeye basıyorum, kasa bip bip diye öterek kalıyor. Ekranda hiçbir şey yok.", "Birkaç kez uzun uzun bip sesi çıkarıyor, sonra susuyor. Ne olduğunu anlayamadım."])
+menu_description = "Bilgisayar yalnız bip kodu verir; hangi parçanın bozuk olduğunu BIOS söylemez. POST kartı bip kodunu çözer. Test menüsünde POST kartı vardır."
+hint = "İpucu: POST kartın varsa BIOS bip kodunun anlamını da yazar. Yoksa deneyerek bulursun, ama sağlam parçayı sökmek hata sayılır."
+board_paths = Array[String](["res://data/boards/modern_z790.tres", "res://data/boards/itx_b650.tres"])
+preinstalled_parts = Array[String](["cpu", "paste", "fan", "ram", "ram", "m2", "sata", "gpu", "psu", "atx24", "eps8", "pcie8", "satapwr", "satadata", "cpufan"])
+inventory_parts = Array[String](["ram", "m2", "gpu"])
+hidden_faults = Array[String](["ram", "m2", "gpu"])
+removable_parts = Array[String](["ram", "m2", "gpu"])
+early_boot = true

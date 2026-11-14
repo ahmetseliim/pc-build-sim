@@ -23,6 +23,12 @@ const SCENARIOS: Array[String] = [
 	"res://data/scenarios/psu_swap.tres",
 	"res://data/scenarios/gpu_swap.tres",
 	"res://data/scenarios/revive_old_pc.tres",
+	"res://data/scenarios/dusty_overheat.tres",
+	"res://data/scenarios/gpu_upgrade_power.tres",
+	"res://data/scenarios/budget_build.tres",
+	"res://data/scenarios/dead_cmos.tres",
+	"res://data/scenarios/hidden_fault.tres",
+	"res://data/scenarios/double_fault.tres",
 ]
 
 # Bozuk kabloya göre müşteri şikâyetleri (senaryoda şikâyet yoksa kullanılır; biri rastgele seçilir)
@@ -71,6 +77,15 @@ var _complaint_roll: int = 0 ## Şikâyet listesinden hangisinin seçileceği (i
 var scenario_faulty_id: String = ""
 ## İş hazırlanınca çağrılır (CareerManager: tezgâhta seçilen teklif parçasını ve kartı işe uygular). GameManager kariyeri tanımaz.
 var job_hook: Callable = Callable()
+
+## Gizli arıza (P7): bu işte arızalı gelen tür (ScenarioData.hidden_faults'tan seçilir); BIOS adını söylemez, yalnız bip kodu verir
+var hidden_fault_type: String = ""
+## Çift arıza (P7): ilk arıza çözülünce bozulacak tür (ScenarioData.latent_faults'tan seçilir); latent_pending: henüz bozulmadı
+var latent_fault_type: String = ""
+var latent_pending: bool = false
+var dusty: bool = false ## Fanda toz var: temizlenene kadar BIOS CPU'yu yüksek sıcaklıkta gösterir (DustCleaner)
+var clock_pending: bool = false ## CMOS saati sıfırlanmış: BIOS'ta tarih ayarlanmadan iş bitmez
+var installed_parts: Dictionary = {} ## parça türü -> takılı parça verileri (güç hesabı gibi parçanın özelliğine bakan kurallar için)
 
 var cpu_state: String = "locked_empty" # Durumlar: locked_empty, open, installed, locked_full, painting, paste_applied, screwing_fan, fan_mounted
 var installed: Dictionary = {} ## parça türü -> takılı adet
@@ -156,8 +171,50 @@ func _prepare(scenario: ScenarioData) -> void:
 	scenario_faulty_id = ""
 	_complaint_roll = randi()
 	_pick_loose_parts(scenario)
+	_pick_new_mechanics(scenario)
 	if job_hook.is_valid():
 		job_hook.call()
+
+# P7 mekanikleri: toz, saat sıfırlanması, gizli ve gizli (ikinci) arıza bu işte hazırlanır
+func _pick_new_mechanics(scenario: ScenarioData) -> void:
+	dusty = scenario.dusty
+	clock_pending = scenario.clock_reset
+	var slot_types: Array[String] = []
+	if not scenario.hidden_faults.is_empty() or not scenario.latent_faults.is_empty():
+		slot_types = slot_types_of(current_board)
+	hidden_fault_type = _pick_fault_type(scenario.hidden_faults, slot_types)
+	latent_fault_type = _pick_fault_type(scenario.latent_faults, slot_types)
+	latent_pending = latent_fault_type != ""
+
+# Aday türlerden kartta yuvası olan biri (yoksa boş)
+func _pick_fault_type(candidates: Array[String], slot_types: Array[String]) -> String:
+	var pool: Array[String] = []
+	for type: String in candidates:
+		if type in slot_types:
+			pool.append(type)
+	return "" if pool.is_empty() else pool.pick_random()
+
+# Arızalı olan türde sağlam parçayı sökmek yanlış teşhistir: arıza türleri (bilinen, gizli ve ikinci arıza adayları)
+func diagnosis_types() -> Array[String]:
+	var types: Array[String] = []
+	if current_scenario == null:
+		return types
+	if current_scenario.faulty_part != "":
+		types.append(current_scenario.faulty_part)
+	types.append_array(current_scenario.hidden_faults)
+	types.append_array(current_scenario.latent_faults)
+	return types
+
+# Takılı bir parça türünün verisi (örn. "psu"); yoksa null. Birden çoksa ilki.
+func installed_part_of(type: String) -> ComponentData:
+	var list: Array = installed_parts.get(type, [])
+	return list[0] as ComponentData if not list.is_empty() else null
+
+# Müşterinin amacı ("oyun", "ofis"...): söylediği şikâyetin etiketi (ScenarioData.complaint_tags); etiket yoksa boş
+func job_purpose() -> String:
+	if current_scenario == null or current_scenario.complaint_tags.is_empty() or current_scenario.complaints.is_empty():
+		return ""
+	return current_scenario.complaint_tags[(_complaint_roll % current_scenario.complaints.size()) % current_scenario.complaint_tags.size()]
 
 # Yerinden çıkmış gelecek parçaları seçer: seçilenler envantere konur, atölyede takılı gelmez (Motherboard._preinstall_scenario_parts).
 # Yalnız hazır takılı listesinde geçen ve bu kartta yuvası olan türler adaydır.
@@ -221,6 +278,12 @@ func reset_build() -> void:
 	cpu_state = "locked_empty"
 	installed.clear()
 	broken_parts.clear()
+	installed_parts.clear()
+	hidden_fault_type = ""
+	latent_fault_type = ""
+	latent_pending = false
+	dusty = false
+	clock_pending = false
 	faulty_slot_label = ""
 	fan_mounted = false
 	paste_old = false
@@ -237,10 +300,15 @@ func mark_complete(done: bool) -> void:
 func _on_part_installed(_slot_id: String, part_data: Resource) -> void:
 	var type: String = (part_data as ComponentData).part_type
 	installed[type] = installed.get(type, 0) + 1
+	if not installed_parts.has(type):
+		installed_parts[type] = []
+	(installed_parts[type] as Array).append(part_data)
 
 func _on_part_removed(_slot_id: String, part_data: Resource) -> void:
 	var type: String = (part_data as ComponentData).part_type
 	installed[type] = maxi(0, installed.get(type, 0) - 1)
+	if installed_parts.has(type):
+		(installed_parts[type] as Array).erase(part_data)
 
 func _on_fan_mounted() -> void:
 	fan_mounted = true

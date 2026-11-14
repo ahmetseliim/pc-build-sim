@@ -56,6 +56,12 @@ const NVME: String = "res://data/scenarios/nvme_upgrade.tres"
 const PSU_SWAP: String = "res://data/scenarios/psu_swap.tres"
 const GPU_SWAP: String = "res://data/scenarios/gpu_swap.tres"
 const REVIVE: String = "res://data/scenarios/revive_old_pc.tres"
+const DUSTY: String = "res://data/scenarios/dusty_overheat.tres"
+const GPU_UPGRADE: String = "res://data/scenarios/gpu_upgrade_power.tres"
+const BUDGET_BUILD: String = "res://data/scenarios/budget_build.tres"
+const DEAD_CMOS: String = "res://data/scenarios/dead_cmos.tres"
+const HIDDEN_FAULT: String = "res://data/scenarios/hidden_fault.tres"
+const DOUBLE_FAULT: String = "res://data/scenarios/double_fault.tres"
 
 ## İlk günler planlıdır: her yeni iş türü ilk kez gelir, sonra tekrar edilir
 const PLANNED_DAYS: Array = [
@@ -70,6 +76,9 @@ const CAREER_POOL: Array[String] = [
 	FAN, CABLE, RAM, PASTE, SSD,
 	RAM_UPGRADE, LOOSE, SECOND_DISK, NVME, PSU_SWAP, GPU_SWAP, REVIVE,
 ]
+
+## Yeni mekanik isteyen 6 iş (P7). Havuza dükkân seviyesi yettiğinde girer (`ScenarioData.min_shop_level`, `level_pool`).
+const P7_POOL: Array[String] = [DUSTY, DEAD_CMOS, HIDDEN_FAULT, GPU_UPGRADE, BUDGET_BUILD, DOUBLE_FAULT]
 
 var is_career: bool = false ## false: test listesinden açılan tek iş (para/kayıt etkilenmez)
 var job_active: bool = false
@@ -268,8 +277,25 @@ func turn_away_current(lost: int = -1) -> bool:
 # Bu işte (kariyerde) tezgâhta parça seçilmesi gerekiyor mu? Seçim yapıldıysa ya da senaryoda teklif yoksa false.
 func needs_offer() -> bool:
 	var scenario: ScenarioData = current_scenario()
-	return is_career and scenario != null and scenario.offer_part_type != "" and scenario.base_budget > 0 \
-		and offer.is_empty() and not offer_options().is_empty()
+	if not (is_career and scenario != null and scenario.offer_part_type != "" and scenario.base_budget > 0 and offer.is_empty()):
+		return false
+	return not offer_options().is_empty() if not is_build_offer() else _build_ready()
+
+# Bu iş bütçeli montaj mı (parçaların hepsini oyuncu seçer)?
+func is_build_offer() -> bool:
+	return PartOffer.is_build(current_scenario())
+
+# Bütçeli montajda her türden en az bir uygun parça var mı
+func _build_ready() -> bool:
+	var options: Dictionary = offer_build_options()
+	for type: String in PartOffer.BUILD_PARTS:
+		if (options.get(type, []) as Array).is_empty():
+			return false
+	return true
+
+# Bütçeli montajın parça listesi: tür -> seçenekler (gelen anakarta uyanlar)
+func offer_build_options() -> Dictionary:
+	return PartOffer.build_options(GameManager.current_board, shelf_level())
 
 func offer_budget_type() -> String:
 	var customer: CustomerData = current_customer()
@@ -277,7 +303,7 @@ func offer_budget_type() -> String:
 
 # Sıradaki müşterinin söylediği bütçe (₺); senaryoda teklif yoksa 0
 func offer_budget() -> int:
-	return PartOffer.budget_for(current_scenario(), offer_budget_type())
+	return PartOffer.budget_for(current_scenario(), offer_budget_type(), GameManager.job_purpose())
 
 # Teklif kartındaki seçenekler (gelen anakarta uyan parçalar)
 func offer_options() -> Array[Dictionary]:
@@ -330,6 +356,61 @@ func choose_part(part_id: String, roll: float = -1.0) -> Dictionary:
 		"faulty": faulty, "replaced": false, "reorder_cost": 0,
 		"board": GameManager.current_board.resource_path if GameManager.current_board else "",
 		"budget": budget, "budget_type": budget_type,
+		"extras": (chosen.get("extras", []) as Array).duplicate(true), # Büyük kartla birlikte önerilen güç kaynağı
+	}
+	_apply_offer_to_job()
+	save_game()
+	EventBus.career_updated.emit()
+	return verdict
+
+# Bütçeli montaj: oyuncu bütün parçaları seçti (`ids`: tür -> katalog kimliği). Dönüş: judge_build() sonucu + "ok", "total".
+# Müşteri bütçeyi çok aşarsa gider (para ve durum değişmez); güç kaynağı kartı taşımıyorsa ya da kasada para yoksa kabul edilmez ("reason").
+# Kabul edilirse bütün parçaların alış fiyatı kasadan düşer ve parçalar işin envanterine yeni parça olarak konur.
+func choose_build(ids: Dictionary) -> Dictionary:
+	var scenario: ScenarioData = current_scenario()
+	if not is_career or not PartOffer.is_build(scenario) or not offer.is_empty():
+		return {"ok": false, "reason": "geçersiz seçim"}
+	var options: Dictionary = offer_build_options()
+	var selection: Dictionary = {}
+	for type: String in PartOffer.BUILD_PARTS:
+		for option: Dictionary in options.get(type, []):
+			if option["id"] == str(ids.get(type, "")):
+				selection[type] = option
+		if not selection.has(type):
+			return {"ok": false, "reason": "her türden bir parça seçilmeli"}
+	var summary: Dictionary = PartOffer.build_summary(scenario, selection)
+	if not bool(summary["power_ok"]):
+		return {"ok": false, "reason": "Güç kaynağı kartı taşımaz: en az %d W gerekir" % int(summary["need_watt"])}
+	var budget: int = offer_budget()
+	var budget_type: String = offer_budget_type()
+	var gpu_option: Dictionary = selection["gpu"]
+	var verdict: Dictionary = PartOffer.judge_build(summary, int(gpu_option["tier"]), budget, budget_type, GameManager.job_purpose())
+	verdict["total"] = int(summary["total"])
+	verdict["part_id"] = str(gpu_option["id"])
+	verdict["ok"] = not verdict["leaves"]
+	if verdict["leaves"]:
+		return verdict
+	if money < int(summary["buy"]):
+		verdict["ok"] = false
+		verdict["reason"] = "Kasada %d ₺ eksik" % (int(summary["buy"]) - money)
+		return verdict
+	money -= int(summary["buy"])
+	day_part_cost += int(summary["buy"])
+	var extras: Array = []
+	var labels: PackedStringArray = PackedStringArray()
+	for type: String in PartOffer.BUILD_PARTS:
+		var option: Dictionary = selection[type]
+		labels.append(str(option["label"]))
+		if type != "gpu":
+			extras.append({"type": type, "id": option["id"], "label": option["label"], "buy": int(option["buy"]), "sell": int(option["sell"]), "count": int(option["count"])})
+	offer = {
+		"part_id": str(gpu_option["id"]), "label": "Montaj: " + ", ".join(labels), "tier": int(gpu_option["tier"]), "used": false,
+		"buy": int(summary["buy"]), "sell": int(summary["sell"]), "labor": int(summary["labor"]), "total": int(summary["total"]),
+		"outcome": verdict["outcome"], "mood": verdict["mood"],
+		"tip_bonus": verdict["tip_bonus"], "tip_mult": verdict["tip_mult"],
+		"faulty": false, "replaced": false, "reorder_cost": 0,
+		"board": GameManager.current_board.resource_path if GameManager.current_board else "",
+		"budget": budget, "budget_type": budget_type, "extras": extras,
 	}
 	_apply_offer_to_job()
 	save_game()
@@ -349,12 +430,38 @@ func _apply_offer_to_job() -> void:
 	if board_path != "" and ResourceLoader.exists(board_path):
 		GameManager.current_board = load(board_path)
 	var part_id: String = str(offer.get("part_id", ""))
-	var index: int = GameManager.scenario_inventory.find(scenario.offer_part_type)
-	if index >= 0:
-		GameManager.scenario_inventory[index] = part_id
-	elif not GameManager.scenario_inventory.has(part_id):
-		GameManager.scenario_inventory.append(part_id)
+	var main_type: String = "gpu" if PartOffer.is_build(scenario) else scenario.offer_part_type
+	# Güç hesabı işinde envanterdeki yedek güç kaynağı (Test menüsü için) kariyerde verilmez; yalnız teklifle gelen alınır
+	if scenario.power_check:
+		_remove_inventory_type("psu")
+	_swap_in(main_type, part_id, 1)
+	for extra: Variant in offer.get("extras", []):
+		var item: Dictionary = extra
+		_swap_in(str(item["type"]), str(item["id"]), int(item.get("count", 1)))
 	GameManager.scenario_faulty_id = part_id if bool(offer.get("faulty", false)) and not bool(offer.get("replaced", false)) else ""
+
+# İşin envanterinde bu türden (genel ya da katalog) `count` parçanın yerine `id` konur; yetmezse sona eklenir
+func _swap_in(type: String, id: String, count: int) -> void:
+	var inventory: Array[String] = GameManager.scenario_inventory
+	var replaced: int = 0
+	for i: int in range(inventory.size()):
+		if replaced >= count:
+			break
+		if inventory[i] == type or InventoryManager.catalog_part_type(inventory[i]) == type:
+			inventory[i] = id
+			replaced += 1
+	if replaced == 0 and inventory.has(id):
+		return
+	while replaced < count:
+		inventory.append(id)
+		replaced += 1
+
+func _remove_inventory_type(type: String) -> void:
+	var kept: Array[String] = []
+	for key: String in GameManager.scenario_inventory:
+		if key != type and InventoryManager.catalog_part_type(key) != type:
+			kept.append(key)
+	GameManager.scenario_inventory = kept
 
 # Tedarikçiden arızalı gelen çıkma parça BIOS'ta yakalanıp sökülünce çağrılır: sağlam bir eşi
 # kasadan yeniden alınır (alış fiyatı bir kez daha düşer) ve envantere yeni parça olarak konur. Bir kez.
@@ -389,7 +496,21 @@ func _read_offer(raw: Variant) -> Dictionary:
 		"faulty": bool(d.get("faulty", false)), "replaced": bool(d.get("replaced", false)),
 		"reorder_cost": int(d.get("reorder_cost", 0)),
 		"board": str(d.get("board", "")), "budget": int(d.get("budget", 0)), "budget_type": str(d.get("budget_type", "orta")),
+		"extras": _read_extras(d.get("extras", [])),
 	}
+	return result
+
+# Teklifle gelen ek parçalar (güç kaynağı önerisi, bütçeli montajın parçaları); eski kayıtlarda yoktur
+func _read_extras(raw: Variant) -> Array:
+	var result: Array = []
+	if raw is Array:
+		for item: Variant in raw:
+			if item is Dictionary:
+				var d: Dictionary = item
+				result.append({
+					"type": str(d.get("type", "")), "id": str(d.get("id", "")), "label": str(d.get("label", "")),
+					"buy": int(d.get("buy", 0)), "sell": int(d.get("sell", 0)), "count": int(d.get("count", 1)),
+				})
 	return result
 
 # --- Dükkân mağazası ---------------------------------------------------------
@@ -509,9 +630,21 @@ func extra_customer_sources() -> int:
 			n += 1
 	return n
 
-# Seviyeye göre iş havuzu: seviye 1'de yalnız bugünkü havuz, 2'den itibaren hepsi
+# Seviyeye göre iş havuzu: seviye 1'de yalnız bugünkü havuz, 2'den itibaren 12 iş ve P7 işlerinden dükkân seviyesi yetenler
+# (14, 17, 18: seviye 2; 15, 16, 19: seviye 3)
 func level_pool() -> Array[String]:
-	return LEVEL1_POOL if shop_level <= 1 else CAREER_POOL
+	if shop_level <= 1:
+		return LEVEL1_POOL
+	var pool: Array[String] = CAREER_POOL.duplicate()
+	for path: String in P7_POOL:
+		var scenario: ScenarioData = load(path) as ScenarioData
+		if scenario != null and scenario.min_shop_level <= shop_level:
+			pool.append(path)
+	return pool
+
+# POST kartı (alet) çalışıyor mu? Kariyerde alınmış olmalı; Test menüsündeki işlerde alet hep var sayılır (kod çözülür)
+func post_card_active() -> bool:
+	return not is_career or has_upgrade("alet_post_karti")
 
 func buy_upgrade(upgrade: UpgradeData) -> bool:
 	if upgrade == null or purchase_block_reason(upgrade) != "":

@@ -12,9 +12,13 @@ const GRID_STEP: float = 20.0
 const TITLE_POS: Vector2 = Vector2(38, 28)
 const CABLE_SNAP: float = 14.0 ## Küçük konnektörler için bırakma toleransı (px)
 const ScrewMechanicScene: PackedScene = preload("res://src/scenes/minigames/ScrewMechanic.tscn")
+const SlotScene: PackedScene = preload("res://src/scenes/workbench/MotherboardSlot.tscn")
+const CMOS_POS: Vector2 = Vector2(520, 110) ## CMOS pil yuvası (üç kartta da boş alan)
+const CMOS_SIZE: Vector2 = Vector2(40, 40)
 
 var slots: Array[MotherboardSlot] = []
 var board: BoardData = null
+var dust_cleaner: DustCleaner = null ## Aşırı ısınma işinde fanın üstündeki toz katmanı
 
 @onready var cpu_socket: CpuSocket = $Slots/CPU_Socket
 @onready var fan_slot: MotherboardSlot = $Slots/Fan_Slot
@@ -31,6 +35,7 @@ var board: BoardData = null
 func _ready() -> void:
 	custom_minimum_size = size
 	board = GameManager.current_board if GameManager.current_board else load(GameManager.DEFAULT_BOARD)
+	_create_cmos_slot()
 	for child: Node in $Slots.get_children():
 		if child is MotherboardSlot:
 			slots.append(child)
@@ -56,7 +61,52 @@ func _ready() -> void:
 	EventBus.fan_mounted.connect(_check_complete)
 	EventBus.fan_unmounted.connect(_on_fan_unmounted)
 
+	EventBus.latent_fault_triggered.connect(_on_latent_fault)
 	_preinstall_scenario_parts()
+	_create_dust_cleaner()
+
+# Saat sıfırlanıyor işinde kartta bir CMOS pil yuvası olur (diğer işlerde yoktur; tamir dükkânındaki üç kartta da aynı yerde)
+func _create_cmos_slot() -> void:
+	var scenario: ScenarioData = GameManager.current_scenario
+	if scenario == null or not scenario.clock_reset:
+		return
+	var slot: MotherboardSlot = SlotScene.instantiate()
+	slot.name = "CMOS_Slot"
+	slot.slot_id = "cmos"
+	slot.accepted_type = "cmos"
+	slot.slot_label = "CMOS"
+	slot.is_circle = true
+	slot.label_size = 8
+	slot.border_color = Color("#94a3b8")
+	slot.position = CMOS_POS
+	slot.size = CMOS_SIZE
+	$Slots.add_child(slot)
+
+# Aşırı ısınma işinde fanın üstüne toz katmanı konur (fan takılıysa)
+func _create_dust_cleaner() -> void:
+	if not GameManager.dusty or not fan_slot.is_occupied:
+		return
+	dust_cleaner = DustCleaner.new()
+	dust_cleaner.position = fan_slot.position
+	dust_cleaner.size = fan_slot.size
+	add_child(dust_cleaner)
+	dust_cleaner.cleaned.connect(_on_dust_cleaned)
+
+func _on_dust_cleaned() -> void:
+	EventBus.info_requested.emit("Fanın ve ızgaranın tozu temizlendi. Bilgisayarı başlatıp sıcaklığı kontrol et.")
+	_check_complete()
+
+# Çift arıza: ilk arıza çözüldü; ikinci arıza takılı bir parçada (bu türden) ortaya çıkar
+func _on_latent_fault(type: String) -> void:
+	var candidates: Array[PartItem] = _placed_parts_of(type)
+	if candidates.is_empty():
+		return
+	var part: PartItem = candidates.pick_random()
+	part.is_broken = true
+	part.refresh_interaction()
+	GameManager.broken_parts.append(type)
+	GameManager.faulty_slot_label = (part.get_parent() as MotherboardSlot).slot_label
+	_check_complete()
 
 # Verilen global noktadaki görünür yuvayı döndürür
 func get_slot_at(global_point: Vector2) -> MotherboardSlot:
@@ -120,14 +170,16 @@ func _preinstall_scenario_parts() -> void:
 			slot.install(part, false)
 			_after_install(part, true)
 
-	# Arızalı parça: bu türden takılı olanlardan biri rastgele seçilir (görünüşte sağlam)
-	if scenario.faulty_part != "":
-		var candidates: Array[PartItem] = _placed_parts_of(scenario.faulty_part)
+	# Arızalı parça: bu türden takılı olanlardan biri rastgele seçilir (görünüşte sağlam).
+	# Gizli arızada tür iş hazırlanırken seçilmiştir (GameManager.hidden_fault_type); BIOS adını söylemez.
+	var fault_type: String = scenario.faulty_part if scenario.faulty_part != "" else GameManager.hidden_fault_type
+	if fault_type != "":
+		var candidates: Array[PartItem] = _placed_parts_of(fault_type)
 		if not candidates.is_empty():
 			var faulty: PartItem = candidates.pick_random()
 			faulty.is_broken = true
 			faulty.refresh_interaction()
-			GameManager.broken_parts.append(scenario.faulty_part)
+			GameManager.broken_parts.append(fault_type)
 			GameManager.faulty_slot_label = (faulty.get_parent() as MotherboardSlot).slot_label
 	for type: String in scenario.removable_parts:
 		for part: PartItem in _placed_parts_of(type):
@@ -300,8 +352,7 @@ func _on_part_extract_requested(part_node: Control) -> void:
 # Sağlam parçayı sökmek yalnız arıza teşhisi yapılan türde hatadır (örn. iki RAM'den sağlamını sökmek).
 # Arızası olmayan işte (NVMe yükseltmede eski SATA) sökülmesi istenen parça hata sayılmaz.
 func _removal_is_misdiagnosis(type: String) -> bool:
-	var scenario: ScenarioData = GameManager.current_scenario
-	return scenario != null and scenario.faulty_part == type
+	return type in GameManager.diagnosis_types()
 
 # Cihaz söküldü: onun konnektörleri (ekran kartının PCIe girişi, SATA diskin güç ve veri girişi) yeniden gizlenir
 func _conceal_connectors_of(type: String) -> void:
@@ -318,7 +369,7 @@ func _conceal_connectors_of(type: String) -> void:
 # Güç kaynağı, ekran kartı ve SATA disk kilitliyken tıklanınca bağlı kabloları çıkıp envantere döner, parça yerinden kalkar
 # (tek tıkla "kilit açılır"; sonra tutup envantere taşınır). Dönüş: parça bu türden ve açıldı mı.
 func _release_part(part: PartItem, slot: MotherboardSlot) -> bool:
-	if part.is_loose or not slot.accepted_type in ["gpu", "psu", "sata"]:
+	if part.is_loose or not slot.accepted_type in ["gpu", "psu", "sata", "cmos"]:
 		return false
 	var plugs: Array[PartItem] = _dependent_cables(slot.accepted_type)
 	for plug: PartItem in plugs:
@@ -335,7 +386,7 @@ func _release_part(part: PartItem, slot: MotherboardSlot) -> bool:
 	pop.tween_property(part, "scale", Vector2(1.04, 1.04), 0.16).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	part.refresh_interaction()
 	AudioManager.play_sfx("latch")
-	var what: String = {"gpu": "Ekran kartının mandalı açıldı", "psu": "Güç kaynağının vidaları söküldü", "sata": "SATA diskin vidası söküldü"}[slot.accepted_type]
+	var what: String = {"gpu": "Ekran kartının mandalı açıldı", "psu": "Güç kaynağının vidaları söküldü", "sata": "SATA diskin vidası söküldü", "cmos": "CMOS pilinin tutucusu açıldı"}[slot.accepted_type]
 	EventBus.info_requested.emit("%s%s. Parçayı tutup envantere taşı." % [what, " ve bağlı kablolar çıkarıldı" if not plugs.is_empty() else ""])
 	_check_complete()
 	return true
@@ -563,7 +614,7 @@ func _on_fan_unmounted() -> void:
 # Tüm yuvalar dolu, fan vidalı, macun yeni ve bozuk kablo yoksa bilgisayar hazırdır
 func _check_complete() -> void:
 	var done: bool = GameManager.fan_mounted and not GameManager.paste_old and GameManager.m2_secured \
-		and GameManager.broken_parts.is_empty()
+		and GameManager.broken_parts.is_empty() and not GameManager.dusty
 	var sata_optional: bool = GameManager.sata_is_optional()
 	for slot: MotherboardSlot in slots:
 		if not slot.is_occupied and not (sata_optional and slot.accepted_type in ["sata", "satapwr", "satadata"]):

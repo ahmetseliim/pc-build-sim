@@ -6,9 +6,9 @@
 script = ExtResource("1_level")
 level = 3
 title = "Montaj atölyesi"
-price = 14000
-required_jobs = 35
+price = 22000
+required_jobs = 40
 required_stars = 3.5
 daily_customers = 6
 background = "res://assets/shop/shop_back_s3.png"
-unlocks = Array[String](["Günde 6 müşteri", "Üst kademe parçalar", "Ekran kartı rafı açılır", "Dolu raf alınabilir", "Daha geniş dükkân görünümü"])
+unlocks = Array[String](["Günde 6 müşteri", "Üst kademe parçalar", "Ekran kartı rafı açılır", "Dolu raf alınabilir", "Daha geniş dükkân görünümü", "Bütçeli montaj, ekran kartı yükseltme (güç hesabı) ve çift arıza işleri"])

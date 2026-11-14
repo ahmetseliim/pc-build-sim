@@ -52,6 +52,14 @@ Proje dizin yapısı ve açıklamaları:
   seçim ve iş anakartı kayda yazılır (menüye çıkıp dönmek seçimi silmez). Çıkma parça %20 arızalı gelir (`ComponentData.is_faulty` → `PartItem.is_broken`, BIOS'ta yakalanır);
   sökülünce yenisi alış fiyatına yeniden alınır (`replace_faulty_part`, bir kez). Stok yok; uyumsuz parça listelenmez. Listelenen en yüksek kademe dükkân seviyesine bağlıdır (P5): `CareerManager.shelf_level()` seviye 1 → kademe 1, seviye 2 → ≤2, seviye 3-4 → hepsi; Test menüsündeki (kariyer dışı) işlerde 3 sabit (`PartOffer.MAX_SHELF_LEVEL`). O kademede karta uyan parça yoksa `PartOffer.options` bir üst kademeye çıkar, kart hiç boş kalmaz.
   Finans: kasadan alış, müşteriden işçilik + parça satışı + bahşiş; hata cezası yalnız işçiliğe. Fiş ve gün sonu özeti işçilik/parça/bahşişi ayrı satır gösterir.
+- Yeni işler, 2. dalga (Aşama 3 / P7): menüde toplam 19 senaryo, havuz `CAREER_POOL` (12) + `CareerManager.P7_POOL` (6; `level_pool()` `ScenarioData.min_shop_level` ile süzer: 14, 17, 18 seviye 2; 15, 16, 19 seviye 3).
+  - 14 `dusty_overheat`: `ScenarioData.dusty`; fanın üstünde `DustCleaner` (macun ızgarasının tersi: basılı tutup sürükleyerek tozu sil); BIOS 94°C + throttle. `alet_kompresor` (alet, seviye 1, 900 ₺) kariyerde şart (`required_upgrade`), hava huzmesini genişletir.
+  - 15 `gpu_upgrade_power`: `PowerCalc` (sistem 200 W + kart gücü ≤ PSU'nun %85'i); BIOS `power_check` ile uyarıp durur; teklifte yetmeyen kart için en ucuz yeterli PSU `extras` olarak eklenir (`PartOffer._add_power_bundle`, Counter kartında not). Hazır takılı katalog id'leri kullanır (`gpu_cikma_demirci`, `psu_450_kartal`).
+  - 16 `budget_build`: `offer_part_type = "build"`; `PartOffer.build_options/build_summary/judge_build`, `CareerManager.choose_build`, Counter `_show_build_card` (5 parça seç). Amaç `complaint_tags` (oyun/ofis), ofis bütçesi ×0,8, oyun için zayıf kart ve ofis için üst kart bahşişi keser, güç yetmeyen seçim reddedilir.
+  - 17 `dead_cmos`: `clock_reset`; `Motherboard._create_cmos_slot` CMOS pil yuvası (`cmos` parçası); BIOS pil bitikse durur, yeni pilde Setup tarih ekranı (`BiosPostTest.date_step/date_save`, takvim 15.11.2026), arıza sayılmaz.
+  - 18 `hidden_fault`: `hidden_faults`; BIOS yalnız bip kodu verir, `CareerManager.post_card_active()` (`alet_post_karti`, seviye 2, 1.600 ₺; Test menüsünde var sayılır) kodu çözer.
+  - 19 `double_fault`: `faulty_part` (RAM) çözülünce BIOS `latent_faults`tan (M.2/GPU) ikinci arızayı ortaya çıkarır (`EventBus.latent_fault_triggered`). `GameManager.diagnosis_types()` sağlam parça sökme hatasını bu işlerde de uygular.
+  - Kayıt sürümü 6 kaldı: teklifteki `extras` alanı `.get` varsayılanıyla (eski kayıtta boş) okunur.
 - Yeni işler (Aşama 3 / P4): toplam 13 senaryo (menüde), `CAREER_POOL` 12 iş (`full_build` yalnız menüde). `ScenarioData.complaints` her işe 3 şikâyet metni verir
   (biri rastgele seçilir, tezgâh ve iş emri aynı metni gösterir); `loose_parts`/`loose_count` takılı gelmeyen (yerinden çıkmış) parçaları envantere verir.
   Yeni raflar: NVMe (2.500 ₺, 10 iş ★3,0), güç kaynağı (3.500 ₺, 16 iş ★3,0), ekran kartı (6.000 ₺, 30 iş ★3,5); SSD rafı 800 ₺.
@@ -72,7 +80,7 @@ Proje dizin yapısı ve açıklamaları:
   Menüdeki "Test" listesinden açılan işler kariyeri etkilemez (`is_career = false`).
   Bahşiş yıldıza göre ayrı ödenir (`TIP_RATES`: 5★ %15, 4★ %8, 3★ %3).
 - `src/resources/LevelData.gd` + `data/levels/seviye_1..4.tres` — Dükkânın büyüme aşamaları (Aşama 3 / P5): ad, bedel, gereken iş ve yıldız, günlük müşteri sayısı, arka plan yolu, açtıkları (metin listesi).
-  1 Köşe tamircisi (başlangıç) · 2 Mahalle dükkânı (12 iş, ★3,0, 4.000 ₺, günde 5) · 3 Montaj atölyesi (35 iş, ★3,5, 14.000 ₺, günde 6) · 4 Teknoloji mağazası (80 iş, ★4,0, 32.000 ₺, günde 7).
+  1 Köşe tamircisi (başlangıç) · 2 Mahalle dükkânı (12 iş, ★3,0, 4.500 ₺, günde 5) · 3 Montaj atölyesi (40 iş, ★3,5, 22.000 ₺, günde 6) · 4 Teknoloji mağazası (120 iş, ★4,0, 70.000 ₺, günde 7).
   `CareerManager.shop_level` kayıtta durur; `level_block_reason()` kapalı-neden metni (`purchase_block_reason` gibi), `buy_level()` şart + para kontrolüyle seviye atlar, alım anında kaydeder.
   Seviye 1'de günlük müşteri bugünkü kural (1. gün 2, sonra 3, 5. günden 4) ve `PLANNED_DAYS` planlı ilk günler; 2+'da `LevelData.daily_customers`. Yeni seviye bir sonraki günden geçerli.
   İş havuzu: seviye 1 `LEVEL1_POOL` (7 iş: fan, kablo, RAM, macun, SSD, RAM yükseltme, gevşek parça), seviye 2+ tüm `CAREER_POOL` (12). Seviye 2+'da iş emri başlığı yalnız belirtiyi söyler
@@ -148,6 +156,7 @@ Montaj döngüsü:
 |-------|-------------|------------|
 | 2026-09-27 | Muhammed | Proje Godot 4'e taşındı. Temel yapı oluşturuldu. |
 | 2026-10-14 | Ahmet Selim | `index.html` prototipinin tasarımı ve oynanışı Godot'a birebir taşındı (mandal, macun, vida, kablolar, CMOS, uyarılar). |
+| 2026-11-15 | Claude | Aşama 3 / P7: 6 yeni mekanikli iş (toz temizleme, güç hesabı, bütçeli montaj, BIOS pili ve tarih ekranı, gizli arıza + POST kartı, çift arıza), kompresör ve POST kartı aletleri, `PowerCalc`, `DustCleaner`, `ScenarioData.min_shop_level`, seviyeye göre havuz; kayıt sürümü 6 kaldı. |
 | 2026-11-15 | Claude | Aşama 3 / P5: dükkân seviyeleri (`LevelData`, `data/levels`, `CareerManager.shop_level`/`buy_level`), mağazada "Dükkân" sekmesi, seviyeye göre müşteri sayısı, iş havuzu, parça kademesi ve belirsiz iş emri başlığı; 5 dekor alımı ve tezgâh dekor/arka plan altyapısı (görseller henüz yok, dosya yoksa atlanır); `CustomerData.min_shop_level`; kayıt sürümü 6. |
 | 2026-11-14 | Claude | Aşama 3 / P2: tezgâhta parça teklifi (`PartOffer`, teklif kartı), müşteri bütçe tipleri, tepkiler, çıkma parça arızası, parça/işçilik ayrı fiş, 3 yeni katalog parçası (DDR3 Kartal/Pusula, M.2 Demirci), kayıt sürümü 5. |
 | 2026-11-14 | Claude | Aşama 3 / P1: parça kataloğu (`data/parts`, 29 parça), `create_part(id)`, etikette marka ve kapasite, kayıt sürümü 4. |

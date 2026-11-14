@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="ScenarioData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/resources/ScenarioData.gd" id="1_scenario"]
+
+[resource]
+script = ExtResource("1_scenario")
+title = "Bütçeli Montaj"
+symptom_title = "Yeni Bilgisayar İstiyor, Parçaları Sen Seç"
+shop_stage = 2
+price = 400
+customer = "Aylin Hanım"
+min_shop_level = 3
+complaints = Array[String](["Oyun için sıfırdan bir bilgisayar istiyorum. Bütün parçaları sen seç, bütçemi de söylerim.", "Ofisimiz için bir bilgisayar topla. Excel ve internet yeter, parçaları sen seç.", "Arkadaşlarla oynayacağım bir bilgisayar istiyorum. Bütün parçaları sen seç, toplamı da sen yap."])
+complaint_tags = Array[String](["oyun", "ofis", "oyun"])
+menu_description = "Müşteri toplam bütçesini ve amacını (oyun / ofis) söyler; işlemci, RAM, SSD, ekran kartı ve güç kaynağını sen seç, sonra montajı yap. Test menüsünde parçalar hazır gelir."
+hint = "İpucu: Oyun için orta kademe ya da üstü ekran kartı, ofis için ucuz kart yeter. Kartın gücünü güç kaynağı taşımalı."
+offer_part_type = "build"
+base_budget = 5600
+board_paths = Array[String](["res://data/boards/modern_z790.tres"])
+preinstalled_parts = Array[String]([])
+inventory_parts = Array[String](["cpu", "paste", "fan", "ram", "ram", "m2", "sata", "atx24", "eps8", "pcie8", "satapwr", "satadata", "cpufan", "gpu", "psu"])
+inventory_is_new = false
+power_check = true
+early_boot = false

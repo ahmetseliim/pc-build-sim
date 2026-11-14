@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="ScenarioData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/resources/ScenarioData.gd" id="1_scenario"]
+
+[resource]
+script = ExtResource("1_scenario")
+title = "Çift Arıza"
+symptom_title = "Açılmıyor, Bir Şeyler Üst Üste Bozulmuş"
+shop_stage = 1
+price = 700
+customer = "Selçuk Bey"
+min_shop_level = 3
+complaints = Array[String](["Bilgisayar açılmıyor. Önce yavaşlamıştı, şimdi hiç açılmıyor. İki sorun birden olmuş gibi.", "Önce rastgele donuyordu, şimdi hiç açılmıyor. Bir şeyler üst üste bozulmuş galiba.", "Bir sorunla geldi sandım ama içinden başka şeyler de gidiyor gibi. Hepsine bak lütfen."])
+menu_description = "İki arıza birden: ilkini çözünce ikincisi ortaya çıkar. Her seferinde BIOS'u yeniden kontrol et."
+hint = "İpucu: BIOS önce bellek hatasını gösterir. Onu çözünce başka bir parça da bozulabilir; sağlam parçayı sökme."
+board_paths = Array[String](["res://data/boards/modern_z790.tres", "res://data/boards/itx_b650.tres"])
+preinstalled_parts = Array[String](["cpu", "paste", "fan", "ram", "ram", "m2", "sata", "gpu", "psu", "atx24", "eps8", "pcie8", "satapwr", "satadata", "cpufan"])
+inventory_parts = Array[String](["ram", "m2", "gpu"])
+faulty_part = "ram"
+latent_faults = Array[String](["m2", "gpu"])
+removable_parts = Array[String](["ram", "m2", "gpu"])
+early_boot = true

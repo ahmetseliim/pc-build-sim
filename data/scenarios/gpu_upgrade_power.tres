@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="ScenarioData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/resources/ScenarioData.gd" id="1_scenario"]
+
+[resource]
+script = ExtResource("1_scenario")
+title = "Ekran Kartı Yükseltme (Güç Hesabı)"
+symptom_title = "Oyunlar Kasıyor, Daha Güçlü Kart İstiyor"
+shop_stage = 1
+price = 500
+customer = "Berk Bey"
+min_shop_level = 3
+complaints = Array[String](["Yeni oyunlar çok kasıyor. Ekran kartımı güçlendirmek istiyorum ama bilgisayarın gücü yeter mi, ona da bak.", "Ekran kartım artık yetmiyor. Daha güçlüsünü takabilir misin? Bilgisayarın geri kalanı iyi çalışıyor.", "Oyunlarda takılmalar başladı. Daha iyi bir ekran kartı lazım, sen uygununu öner."])
+menu_description = "Eski kartı daha güçlüsüyle değiştir. Kartın çektiği güç güç kaynağını aşarsa BIOS uyarır; güç kaynağını da değiştir."
+hint = "İpucu: Kartın gücü ile güç kaynağının kapasitesini karşılaştır (toplam çekişin %85'i güç kaynağını geçmemeli). Güç kaynağını değiştirirken önce bütün kablolarını söker, sonra yeniden bağlarsın."
+required_upgrade = "raf_gpu"
+offer_part_type = "gpu"
+base_budget = 3600
+board_paths = Array[String](["res://data/boards/modern_z790.tres", "res://data/boards/itx_b650.tres"])
+preinstalled_parts = Array[String](["cpu", "paste", "fan", "ram", "ram", "m2", "sata", "gpu_cikma_demirci", "psu_450_kartal", "atx24", "eps8", "pcie8", "satapwr", "satadata", "cpufan"])
+inventory_parts = Array[String](["gpu_nova12_zirve", "psu_650_volta"])
+removable_parts = Array[String](["gpu", "psu"])
+power_check = true
+early_boot = true

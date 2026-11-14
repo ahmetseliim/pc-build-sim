@@ -16,6 +16,7 @@ const PART_SIZES: Dictionary = {
 	"sata": Vector2(140, 95),
 	"gpu": Vector2(480, 52),
 	"psu": Vector2(200, 110),
+	"cmos": Vector2(40, 40), # CR2032 yassı pil (CMOS pil yuvası yalnız saat işinde vardır)
 }
 
 var available_parts: Array[Resource] = []
@@ -46,6 +47,10 @@ func _load_parts_catalog() -> void:
 ## Katalogdaki parça kimliği mi?
 func has_catalog_part(id: String) -> bool:
 	return _catalog.has(id)
+
+## Katalog parçasının türü ("psu", "gpu"...); katalogda değilse boş
+func catalog_part_type(id: String) -> String:
+	return (_catalog[id] as ComponentData).part_type if _catalog.has(id) else ""
 
 ## Katalogdaki parçalar (isteğe bağlı tür ve en düşük kademe/raf seviyesi süzgeci); kademe, sonra alış fiyatına göre sıralı
 func catalog_parts(type: String = "", max_shelf_level: int = 0) -> Array[ComponentData]:
@@ -108,6 +113,8 @@ func create_part(key: String) -> ComponentData:
 			return _create(GPUData.new(), "gpu", "Ekran Kartı", PART_SIZES["gpu"])
 		"psu":
 			return _create(ComponentData.new(), "psu", "Güç Kaynağı", PART_SIZES["psu"])
+		"cmos":
+			return _create(ComponentData.new(), "cmos", "CMOS Pili", PART_SIZES["cmos"])
 		# Kablolar (fiş boyutu = konnektör boyutu)
 		"atx24":
 			return _cable("atx24", "24-PIN", Vector2(28, 84), "#f59e0b", 9.0, "psu_atx", Vector2.DOWN)

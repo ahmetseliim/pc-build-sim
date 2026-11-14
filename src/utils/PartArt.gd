@@ -54,6 +54,8 @@ static func draw(ci: CanvasItem, d: ComponentData, r: Rect2, placed: bool, angle
 			_draw_gpu(ci, d, r, angle)
 		"psu":
 			_draw_psu(ci, d, r, angle)
+		"cmos":
+			_draw_cmos(ci, r)
 		_:
 			_shadowed_box(ci, r, d.bg_color, d.corner_radius)
 			_text(ci, r.get_center(), d.part_name, d.font_size, d.text_color)
@@ -237,6 +239,18 @@ static func _draw_paste(ci: CanvasItem, d: ComponentData, r: Rect2) -> void:
 		_fit_text(ci, Vector2(r.get_center().x, r.end.y - 8), "%s %s" % [d.brand, d.model], 8, Color.WHITE, r.size.x - 6.0)
 	else:
 		_text(ci, Vector2(r.get_center().x, r.end.y - 8), "Macun", 8, Color.WHITE)
+
+# CMOS pili: gümüş yassı pil (CR2032), üstte artı işareti ve yazı
+static func _draw_cmos(ci: CanvasItem, r: Rect2) -> void:
+	var c: Vector2 = r.get_center()
+	var radius: float = minf(r.size.x, r.size.y) / 2.0 - 1.0
+	ci.draw_circle(c + Vector2(0, 2), radius, SHADOW)
+	ci.draw_circle(c, radius, Color("#94a3b8"))
+	ci.draw_circle(c, radius - 3.0, Color("#cbd5e1"))
+	ci.draw_arc(c, radius - 6.0, 0.0, TAU, 28, Color("#e2e8f0"), 1.5, true)
+	ci.draw_arc(c, radius, 0.0, TAU, 32, HALO, 1.0, true)
+	_text(ci, c + Vector2(0, -5), "+", 11, Color("#334155"))
+	_text(ci, c + Vector2(0, 5), "CR2032", 6, Color("#334155"))
 
 static func _draw_cloth(ci: CanvasItem, r: Rect2) -> void:
 	_shadowed_box(ci, r, Color("#334155"), 6, 1, Color("#64748b"))

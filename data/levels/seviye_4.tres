@@ -6,8 +6,8 @@
 script = ExtResource("1_level")
 level = 4
 title = "Teknoloji mağazası"
-price = 32000
-required_jobs = 80
+price = 70000
+required_jobs = 120
 required_stars = 4.0
 daily_customers = 7
 background = "res://assets/shop/shop_back_s4.png"

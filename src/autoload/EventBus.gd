@@ -25,6 +25,8 @@ signal bios_boot_requested() ## "Bilgisayarı Başlat" butonuna basıldı
 signal bios_boot_started()
 signal bios_boot_finished()
 signal boot_failed() ## POST testi arıza buldu
+signal latent_fault_triggered(type: String) ## Çift arıza: ilk arıza çözüldü, ikincisi bu türden takılı parçada ortaya çıktı
+signal dust_cleaned() ## Fandaki toz temizlendi
 signal inventory_updated()
 signal mistake_made(kind: String) ## Oyuncu hata yaptı (ücretten keser, yıldız düşürür)
 signal career_updated() ## Para, gün ya da hata sayısı değişti

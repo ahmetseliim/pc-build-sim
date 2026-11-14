@@ -16,6 +16,8 @@ extends Resource
 ## İş emri kartında (kariyer, dükkân seviyesi 2 ve üstü) gösterilen belirsiz başlık: yalnız belirtiyi söyler, teşhisi BIOS'tan yapılır.
 ## Boşsa ya da seviye 1'de `title` gösterilir (GameManager.order_title)
 @export var symptom_title: String = ""
+## Bu iş kariyerde hangi dükkân seviyesinden itibaren havuza girer (CareerManager.level_pool; 1: her zaman). Test menüsünde her zaman açıktır.
+@export var min_shop_level: int = 1
 @export_multiline var menu_description: String = ""
 @export_multiline var hint: String = "" ## İş emri kartında gösterilen ipucu
 ## Bu işi kabul etmek için gereken dükkân alımı (data/upgrades/*.tres id'si, örn. "raf_ssd"). Boşsa her zaman yapılabilir.
@@ -54,3 +56,20 @@ extends Resource
 
 @export_group("Akış")
 @export var early_boot: bool = false ## "Bilgisayarı Başlat" baştan görünsün (arıza teşhisi için)
+
+@export_group("Yeni mekanikler (P7)")
+## Fanda ve ızgarada toz birikmiş gelir: bilgisayar çalışmaz (BIOS: CPU ısınır, throttle); DustCleaner ile temizlenir
+@export var dusty: bool = false
+## Saat sıfırlanıyor: CMOS pil yuvası eklenir (preinstalled_parts/inventory_parts'ta "cmos"), pil bittiğinde BIOS tarihi sıfırlar,
+## yeni pil takılınca BIOS'ta tarih ayarlanana kadar iş bitmez
+@export var clock_reset: bool = false
+## Güç hesabı: BIOS, takılı ekran kartının ve sistemin çektiği gücü güç kaynağının kapasitesiyle karşılaştırır (PowerCalc);
+## yetmiyorsa uyarı verip durur. Tezgâh teklifinde büyük kartla birlikte yeterli güç kaynağı da önerilir.
+@export var power_check: bool = false
+## Gizli arıza: bu türlerden biri (iş hazırlanırken rastgele) arızalı gelir ama BIOS adını söylemez, yalnız bip kodu verir.
+## POST kartı (alet) varsa kod çözülür ve arızalı parça yazılır.
+@export var hidden_faults: Array[String] = []
+## Çift arıza: `faulty_part` çözülünce bu türlerden biri (rastgele) bozulur ve BIOS ikinci arızayı gösterir
+@export var latent_faults: Array[String] = []
+## `complaints` ile aynı sırada, her şikâyetin etiketi (örn. "oyun" / "ofis"); bütçeli montajda müşterinin amacını belirler
+@export var complaint_tags: Array[String] = []
